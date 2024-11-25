@@ -130,6 +130,25 @@ async fn test_get_priority_fee_ws(project: api::Project, percentile: Option<f64>
     Ok(())
 }
 
+#[test_case(vec!["CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK".to_string(), "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C".to_string()])]
+#[tokio::test]
+#[ignore]
+async fn test_get_priority_fee_by_program_ws(programs: Vec<String>) -> Result<()> {
+    let client = WebSocketClient::new(None).await?;
+
+    let response = timeout(
+        Duration::from_secs(10),
+        client.get_priority_fee_by_program(programs),
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
+
+    println!("priority fee by program: {}", serde_json::to_string_pretty(&response)?);
+
+    client.close().await?;
+    Ok(())
+}
+
 #[test_case(SAMPLE_OWNER_ADDR; "get token accounts - via ws")]
 #[tokio::test]
 #[ignore]

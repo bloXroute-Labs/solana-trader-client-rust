@@ -90,6 +90,23 @@ impl GrpcClient {
         Ok(response.into_inner())
     }
 
+    pub async fn get_priority_fee_by_program(
+        &mut self,
+        programs: Vec<String>,
+    ) -> Result<api::GetPriorityFeeByProgramResponse> {
+        let request = Request::new(api::GetPriorityFeeByProgramRequest {
+            programs: programs
+        });
+
+        let response = self
+            .client
+            .get_priority_fee_by_program(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetPriorityFeeByProgram error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
     pub async fn get_token_accounts(
         &mut self,
         owner_address: String,

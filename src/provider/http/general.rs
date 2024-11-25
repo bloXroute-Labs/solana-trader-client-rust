@@ -141,6 +141,25 @@ impl HTTPClient {
         self.handle_response(response).await
     }
 
+    pub async fn get_priority_fee_by_program(
+        &self,
+        programs: Vec<String>,
+    ) -> Result<api::GetPriorityFeeByProgramResponse> {
+        let url = format!(
+            "{}/api/v2/system/priority-fee-by-program?programs={}",
+            self.base_url, programs.join("&programs=")
+        );
+
+        let response: reqwest::Response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
+
+        self.handle_response(response).await
+    }
+
     pub async fn get_token_accounts(
         &self,
         owner_address: String,

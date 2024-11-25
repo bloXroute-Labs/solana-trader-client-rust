@@ -72,6 +72,20 @@ impl WebSocketClient {
         self.conn.request("GetPriorityFee", params).await
     }
 
+    pub async fn get_priority_fee_by_program(
+        &self,
+        programs: Vec<String>,
+    ) -> Result<api::GetPriorityFeeByProgramResponse> {
+        let request = api::GetPriorityFeeByProgramRequest {
+            programs: programs
+        };
+
+        let params = serde_json::to_value(request)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
+
+        self.conn.request("GetPriorityFeeByProgram", params).await
+    }
+
     pub async fn get_token_accounts(
         &self,
         owner_address: String,

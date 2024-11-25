@@ -118,6 +118,18 @@ async fn test_get_priority_fee_grpc(project: api::Project, percentile: Option<f6
     Ok(())
 }
 
+#[test_case(vec!["CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK".to_string(), "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C".to_string()])]
+#[tokio::test]
+#[ignore]
+async fn test_get_priority_fee_by_program_grpc(programs: Vec<String>) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+
+    let response = client.get_priority_fee_by_program(programs).await?;
+    println!("priority fee by program: {}", serde_json::to_string_pretty(&response)?);
+
+    Ok(())
+}
+
 #[test_case(SAMPLE_OWNER_ADDR; "get token accounts - via grpc")]
 #[tokio::test]
 #[ignore]
