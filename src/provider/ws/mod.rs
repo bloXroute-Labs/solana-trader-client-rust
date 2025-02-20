@@ -10,7 +10,7 @@ use solana_sdk::signature::Keypair;
 use solana_trader_proto::api::GetRecentBlockHashResponseV2;
 
 use crate::common::signing::{sign_transaction, SubmitParams};
-use crate::common::{get_base_url_from_env, ws_endpoint, BaseConfig};
+use crate::common::{get_base_url_from_env, is_submit_only_endpoint, ws_endpoint, BaseConfig};
 use crate::connections::ws::WS;
 
 use super::utils::IntoTransactionMessage;
@@ -39,6 +39,8 @@ impl WebSocketClient {
         let (default_base_url, secure) = get_base_url_from_env();
         let final_base_url = endpoint.unwrap_or(default_base_url);
         let endpoint = ws_endpoint(&final_base_url, secure);
+
+        is_submit_only_endpoint(&final_base_url);
 
         if base.auth_header.is_empty() {
             return Err(anyhow::anyhow!("AUTH_HEADER is empty"));

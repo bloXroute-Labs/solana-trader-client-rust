@@ -31,7 +31,7 @@ impl Default for SubmitParams {
         Self {
             skip_pre_flight: true,
             front_running_protection: false,
-            use_staked_rpcs: true,
+            use_staked_rpcs: false,
             fast_best_effort: false,
             submit_strategy: api::SubmitStrategy::PSubmitAll,
             allow_back_run: None,

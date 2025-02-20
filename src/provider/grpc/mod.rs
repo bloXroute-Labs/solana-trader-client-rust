@@ -16,7 +16,7 @@ use tonic::{
 };
 
 use crate::common::signing::{sign_transaction, SubmitParams};
-use crate::common::{get_base_url_from_env, grpc_endpoint, BaseConfig};
+use crate::common::{get_base_url_from_env, grpc_endpoint, is_submit_only_endpoint, BaseConfig};
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api::{
     GetRecentBlockHashRequestV2, PostSubmitRequest, TransactionMessage,
@@ -77,6 +77,8 @@ impl GrpcClient {
         let final_base_url = endpoint.unwrap_or(default_base_url);
         let endpoint = grpc_endpoint(&final_base_url, secure);
 
+        is_submit_only_endpoint(&final_base_url);
+
         if CryptoProvider::get_default().is_none() {
             default_provider()
                 .install_default()
@@ -132,7 +134,7 @@ impl GrpcClient {
                 allow_back_run: submit_opts.allow_back_run,
                 revenue_address: submit_opts.revenue_address,
                 allow_revert: Some(false),
-                sniping: Some(false)
+                sniping: Some(false),
             };
 
             let signature = self

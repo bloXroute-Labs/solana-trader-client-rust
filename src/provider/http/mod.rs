@@ -14,7 +14,7 @@ use solana_trader_proto::api::GetRecentBlockHashResponseV2;
 
 use crate::{
     common::{
-        get_base_url_from_env, http_endpoint,
+        get_base_url_from_env, http_endpoint, is_submit_only_endpoint,
         signing::{sign_transaction, SubmitParams},
         BaseConfig,
     },
@@ -40,6 +40,8 @@ impl HTTPClient {
         let (default_base_url, secure) = get_base_url_from_env();
         let final_base_url = endpoint.unwrap_or(default_base_url);
         let endpoint = http_endpoint(&final_base_url, secure);
+
+        is_submit_only_endpoint(&final_base_url);
 
         let headers = Self::build_headers(&base.auth_header)?;
         let client = Client::builder()
