@@ -4,7 +4,10 @@ pub mod signing;
 use std::{env, str::FromStr};
 
 use anyhow::{anyhow, Result};
-use constants::{LOCAL, MAINNET_NY, MAINNET_PUMP_NY, MAINNET_PUMP_UK, MAINNET_UK, TESTNET};
+use constants::{
+    LOCAL, MAINNET_AMSTERDAM, MAINNET_FRANKFURT, MAINNET_LA, MAINNET_NY, MAINNET_PUMP_NY,
+    MAINNET_PUMP_UK, MAINNET_TOKYO, MAINNET_UK, TESTNET,
+};
 use dotenv::dotenv;
 use solana_sdk::{bs58::decode, pubkey::Pubkey, signature::Keypair};
 
@@ -24,20 +27,37 @@ pub fn grpc_endpoint(base_url: &str, secure: bool) -> String {
     format!("{}://{}{}", prefix, base_url, port)
 }
 
+pub fn is_submit_only_endpoint(endpoint: &str) -> bool {
+    matches!(
+        endpoint,
+        MAINNET_FRANKFURT | MAINNET_LA | MAINNET_AMSTERDAM | MAINNET_TOKYO
+    ) && {
+        println!("\x1b[93m⚠️  WARNING\x1b[0m: Endpoint \x1b[96m{}\x1b[0m only supports transaction submission. Quotes, streams and other services are \x1b[91mnot available\x1b[0m.", endpoint);
+        true
+    }
+}
+
 pub fn get_base_url_from_env() -> (String, bool) {
     let network = std::env::var("NETWORK").unwrap_or_else(|_| "mainnet".to_string());
     let region = std::env::var("REGION").unwrap_or_else(|_| "NY".to_string());
     println!("network {}", network);
     println!("region {}", region);
-    match (network.as_str(), region.as_str()) {
+
+    let (base_url, secure) = match (network.as_str(), region.as_str()) {
         ("LOCAL", _) => (LOCAL.to_string(), false),
         ("TESTNET", _) => (TESTNET.to_string(), true),
         ("MAINNET", "UK") => (MAINNET_UK.to_string(), true),
         ("MAINNET", "NY") => (MAINNET_NY.to_string(), true),
+        ("MAINNET", "FRANKFURT") => (MAINNET_FRANKFURT.to_string(), true),
+        ("MAINNET", "LA") => (MAINNET_LA.to_string(), true),
+        ("MAINNET", "AMSTERDAM") => (MAINNET_AMSTERDAM.to_string(), true),
+        ("MAINNET", "TOKYO") => (MAINNET_TOKYO.to_string(), true),
         ("MAINNET_PUMP", "NY") => (MAINNET_PUMP_NY.to_string(), true),
         ("MAINNET_PUMP", "UK") => (MAINNET_PUMP_UK.to_string(), true),
         _ => (MAINNET_NY.to_string(), false),
-    }
+    };
+
+    (base_url, secure)
 }
 
 pub struct BaseConfig {

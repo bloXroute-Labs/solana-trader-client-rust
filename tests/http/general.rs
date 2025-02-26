@@ -229,7 +229,11 @@ async fn test_submit_snipe_http() -> Result<()> {
 
     // Second transaction: staked transfer to bloxroute
     let tx2 = create_signed_transaction(
-        vec![system_instruction::transfer(&pubkey, &tip_wallet, staked_tip_threshold)],
+        vec![system_instruction::transfer(
+            &pubkey,
+            &tip_wallet,
+            staked_tip_threshold,
+        )],
         &pubkey,
         keypair,
         block_hash,
