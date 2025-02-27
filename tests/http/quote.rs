@@ -173,13 +173,11 @@ async fn test_jupiter_quotes_http(
 ) -> Result<()> {
     let client = HTTPClient::new(None)?;
 
-    let fast_mode = true;
     let request = api::GetJupiterQuotesRequest {
         in_token: in_token.to_string(),
         out_token: out_token.to_string(),
         in_amount,
         slippage,
-        fast_mode: Some(fast_mode),
     };
 
     let response = client.get_jupiter_quotes(&request).await?;

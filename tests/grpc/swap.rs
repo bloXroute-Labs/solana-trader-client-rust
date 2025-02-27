@@ -342,7 +342,6 @@ async fn test_jupiter_swap_grpc(
         compute_limit: 300000,
         compute_price: 2000,
         tip: Some(2000001),
-        fast_mode: None,
     };
 
     let response = client.post_jupiter_swap(&request).await?;
@@ -454,7 +453,6 @@ async fn test_jupiter_swap_instructions_grpc(
         out_token: out_token.to_string(),
         in_amount,
         slippage,
-        fast_mode: None,
         compute_price: 10000,
         tip: Some(10000),
     };

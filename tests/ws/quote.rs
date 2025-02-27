@@ -200,13 +200,11 @@ async fn test_jupiter_quotes_ws(
 ) -> Result<()> {
     let client = WebSocketClient::new(None).await?;
 
-    let fast_mode = true;
     let request = api::GetJupiterQuotesRequest {
         in_token: in_token.to_string(),
         out_token: out_token.to_string(),
         in_amount,
         slippage,
-        fast_mode: Some(fast_mode),
     };
 
     let response = timeout(Duration::from_secs(10), client.get_jupiter_quotes(&request))

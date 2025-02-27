@@ -177,7 +177,6 @@ async fn test_jupiter_quotes_grpc(
         out_token: out_token.to_string(),
         in_amount,
         slippage,
-        fast_mode: None,
     };
 
     let response = client.get_jupiter_quotes(&request).await?;

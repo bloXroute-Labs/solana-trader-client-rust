@@ -338,7 +338,6 @@ async fn test_jupiter_swap_http(
         compute_limit: 300000,
         compute_price: 2000,
         tip: Some(2000001),
-        fast_mode: None,
     };
 
     let response = client.post_jupiter_swap(&request).await?;
@@ -451,7 +450,6 @@ async fn test_jupiter_swap_instructions_http(
         slippage,
         compute_price: 2000,
         tip: Some(2000001),
-        fast_mode: None,
     };
 
     let submit_opts = SubmitParams::default();
