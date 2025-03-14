@@ -37,6 +37,88 @@ impl GrpcClient {
         Ok(response.into_inner())
     }
 
+    pub async fn get_orderbook_stream(
+        &mut self,
+        markets: Vec<String>,
+        limit: u32,
+        project: api::Project,
+    ) -> Result<Streaming<api::GetOrderbooksStreamResponse>> {
+        let request = Request::new(api::GetOrderbooksRequest {
+            markets,
+            limit,
+            project: project as i32,
+        });
+
+        let response = self
+            .client
+            .get_orderbooks_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetOrderbooksStream error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_market_depths_stream(
+        &mut self,
+        markets: Vec<String>,
+        limit: u32,
+        project: api::Project,
+    ) -> Result<Streaming<api::GetMarketDepthsStreamResponse>> {
+        let request = Request::new(api::GetMarketDepthsRequest {
+            markets,
+            limit,
+            project: project as i32,
+        });
+
+        let response = self
+            .client
+            .get_market_depths_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetMarketDepthsStream error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_ticker_stream(
+        &mut self,
+        markets: Vec<String>,
+        project: api::Project,
+    ) -> Result<Streaming<api::GetTickersStreamResponse>> {
+        let request = Request::new(api::GetTickersStreamRequest {
+            markets,
+            project: project as i32,
+        });
+
+        let response = self
+            .client
+            .get_tickers_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetTickersStream error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_trades_stream(
+        &mut self,
+        market: String,
+        limit: u32,
+        project: api::Project,
+    ) -> Result<Streaming<api::GetTradesStreamResponse>> {
+        let request = Request::new(api::GetTradesRequest {
+            market,
+            limit,
+            project: project as i32,
+        });
+
+        let response = self
+            .client
+            .get_trades_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetTradesStream error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
     pub async fn get_swaps_stream(
         &mut self,
         projects: Vec<api::Project>,
