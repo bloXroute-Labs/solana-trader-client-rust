@@ -205,4 +205,30 @@ impl GrpcClient {
 
         Ok(response.into_inner())
     }
+
+    pub async fn post_trade_swap(
+        &mut self,
+        request: &api::TradeSwapRequest,
+    ) -> Result<api::TradeSwapResponse> {
+        let response = self
+            .client
+            .post_trade_swap(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostTradeSwap error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn post_route_trade_swap(
+        &mut self,
+        request: &api::RouteTradeSwapRequest,
+    ) -> Result<api::TradeSwapResponse> {
+        let response = self
+            .client
+            .post_route_trade_swap(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostRouteTradeSwap error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
 }

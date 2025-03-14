@@ -25,6 +25,68 @@ impl WebSocketClient {
         self.conn.stream_proto("GetBlockStream", &request).await
     }
 
+    pub async fn get_orderbook_stream(
+        &self,
+        markets: Vec<String>,
+        limit: u32,
+        project: api::Project,
+    ) -> Result<impl Stream<Item = Result<api::GetOrderbooksStreamResponse>>> {
+        let request = api::GetOrderbooksRequest {
+            markets,
+            limit,
+            project: project as i32,
+        };
+
+        self.conn
+            .stream_proto("GetOrderbooksStream", &request)
+            .await
+    }
+
+    pub async fn get_market_depths_stream(
+        &self,
+        markets: Vec<String>,
+        limit: u32,
+        project: api::Project,
+    ) -> Result<impl Stream<Item = Result<api::GetMarketDepthsStreamResponse>>> {
+        let request = api::GetMarketDepthsRequest {
+            markets,
+            limit,
+            project: project as i32,
+        };
+
+        self.conn
+            .stream_proto("GetMarketDepthsStream", &request)
+            .await
+    }
+
+    pub async fn get_ticker_stream(
+        &self,
+        markets: Vec<String>,
+        project: api::Project,
+    ) -> Result<impl Stream<Item = Result<api::GetTickersStreamResponse>>> {
+        let request = api::GetTickersStreamRequest {
+            markets,
+            project: project as i32,
+        };
+
+        self.conn.stream_proto("GetTickersStream", &request).await
+    }
+
+    pub async fn get_trades_stream(
+        &self,
+        market: String,
+        limit: u32,
+        project: api::Project,
+    ) -> Result<impl Stream<Item = Result<api::GetTradesStreamResponse>>> {
+        let request = api::GetTradesRequest {
+            market,
+            limit,
+            project: project as i32,
+        };
+
+        self.conn.stream_proto("GetTradesStream", &request).await
+    }
+
     pub async fn get_swaps_stream(
         &self,
         projects: Vec<api::Project>,

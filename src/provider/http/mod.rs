@@ -366,6 +366,27 @@ impl HTTPClient {
         self.handle_response(response).await
     }
 
+    pub async fn get_account_balance_v2(
+        &self,
+        request: api::GetAccountBalanceRequest,
+    ) -> anyhow::Result<api::GetAccountBalanceResponse> {
+        println!("here1");
+
+        let url = format!(
+            "{}/api/v2/balance?ownerAddress={}",
+            self.base_url, request.owner_address
+        );
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
+
+        self.handle_response(response).await
+    }
+
     pub async fn get_priority_fee(
         &self,
         project: api::Project,
@@ -418,6 +439,25 @@ impl HTTPClient {
     ) -> Result<api::GetTokenAccountsResponse> {
         let url = format!(
             "{}/api/v1/account/token-accounts?ownerAddress={}",
+            self.base_url, owner_address
+        );
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
+
+        self.handle_response(response).await
+    }
+
+    pub async fn get_account_balance(
+        &self,
+        owner_address: String,
+    ) -> Result<api::GetAccountBalanceResponse> {
+        let url = format!(
+            "{}/api/v2/balance?ownerAddress={}",
             self.base_url, owner_address
         );
 
