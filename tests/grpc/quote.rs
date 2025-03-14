@@ -193,6 +193,59 @@ async fn test_jupiter_quotes_grpc(
 }
 
 #[test_case(
+    "So11111111111111111111111111111111111111112",
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    0.01,
+    5.0,
+    5,
+    vec![api::Project::PAll];
+    "SOL to USDC aggregated quotes via gRPC"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_get_quotes_grpc(
+    in_token: &str,
+    out_token: &str,
+    in_amount: f64,
+    slippage: f64,
+    limit: i32,
+    projects: Vec<api::Project>,
+) -> Result<()> {
+    let mut client = GrpcClient::new(None).await?;
+
+    let request = api::GetQuotesRequest {
+        in_token: in_token.to_string(),
+        out_token: out_token.to_string(),
+        in_amount,
+        slippage,
+        limit,
+        projects: projects.iter().map(|p| *p as i32).collect(),
+    };
+
+    let response = client.get_quotes(&request).await?;
+    println!(
+        "Aggregated Quotes: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+
+    assert!(
+        response.quotes.len() == 2,
+        "Expected exactly 2 quotes in response, got {}",
+        response.quotes.len()
+    );
+
+    for quote in &response.quotes {
+        assert!(
+            !quote.routes.is_empty(),
+            "No routes found for project {}",
+            quote.project
+        );
+    }
+
+    Ok(())
+}
+
+#[test_case(
     vec![
         "So11111111111111111111111111111111111111112".to_string(),  // SOL
         "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263".to_string(), // BONK

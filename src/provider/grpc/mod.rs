@@ -313,6 +313,19 @@ impl GrpcClient {
         Ok(response.into_inner())
     }
 
+    pub async fn get_account_balance_v2(
+        &mut self,
+        request: &api::GetAccountBalanceRequest,
+    ) -> Result<api::GetAccountBalanceResponse> {
+        let response = self
+            .client
+            .get_account_balance_v2(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("GetAccountBalanceV2 error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
     pub async fn get_priority_fee(
         &mut self,
         project: api::Project,
@@ -358,6 +371,21 @@ impl GrpcClient {
             .get_token_accounts(request)
             .await
             .map_err(|e| anyhow::anyhow!("GetTokenAccounts error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_account_balance(
+        &mut self,
+        owner_address: String,
+    ) -> Result<api::GetAccountBalanceResponse> {
+        let request = Request::new(api::GetAccountBalanceRequest { owner_address });
+
+        let response = self
+            .client
+            .get_account_balance(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetAccountBalance error: {}", e))?;
 
         Ok(response.into_inner())
     }

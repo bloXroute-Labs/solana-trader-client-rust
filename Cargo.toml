@@ -35,7 +35,7 @@ bitnet = "0.31.9"
 serde_json = "1.0.132"
 solana-sdk = "2.1.0"
 solana-hash = "2.1.0"
-solana-trader-proto = { git = "https://github.com/bloXroute-Labs/solana-trader-proto", rev = "be2eec83459efc99dda47d5b006e5589f4471135" }
+solana-trader-proto = "0.1.8"
 thiserror = "1.0.65"
 tokio = { version = "1.41.0", features = ["full"] }
 tokio-tungstenite = { version = "0.24.0", features = ["rustls-tls-webpki-roots"]}
