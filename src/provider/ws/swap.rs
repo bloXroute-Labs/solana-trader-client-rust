@@ -230,37 +230,4 @@ impl WebSocketClient {
         self.sign_and_submit(vec![tx_message], submit_opts, use_bundle)
             .await
     }
-
-    pub async fn post_trade_swap(
-        &self,
-        request: &api::TradeSwapRequest,
-    ) -> Result<api::TradeSwapResponse> {
-        let params = json!({
-            "ownerAddress": request.owner_address,
-            "inToken": request.in_token,
-            "outToken": request.out_token,
-            "inAmount": request.in_amount,
-            "slippage": request.slippage,
-            "project": request.project,
-            "computeLimit": request.compute_limit,
-            "computePrice": request.compute_price,
-            "tip": request.tip,
-        });
-
-        self.conn.request("PostTradeSwap", params).await
-    }
-
-    pub async fn post_route_trade_swap(
-        &self,
-        request: &api::RouteTradeSwapRequest,
-    ) -> Result<api::TradeSwapResponse> {
-        let params = json!({
-            "ownerAddress": request.owner_address,
-            "project": request.project,
-            "slippage": request.slippage,
-            "steps": request.steps,
-        });
-
-        self.conn.request("PostRouteTradeSwap", params).await
-    }
 }

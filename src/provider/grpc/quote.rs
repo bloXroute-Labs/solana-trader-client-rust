@@ -73,19 +73,6 @@ impl GrpcClient {
         Ok(response.into_inner())
     }
 
-    pub async fn get_quotes(
-        &mut self,
-        request: &api::GetQuotesRequest,
-    ) -> Result<api::GetQuotesResponse> {
-        let response = self
-            .client
-            .get_quotes(Request::new(request.clone()))
-            .await
-            .map_err(|e| anyhow::anyhow!("GetQuotes error: {}", e))?;
-
-        Ok(response.into_inner())
-    }
-
     pub async fn get_raydium_prices(
         &mut self,
         tokens: Vec<String>,
