@@ -202,7 +202,7 @@ async fn test_priority_fee_stream_ws(project: api::Project, percentile: Option<f
 )]
 #[tokio::test]
 #[ignore]
-async fn test_priority_fee_by_program_stream_grpc(programs: Vec<String>) -> Result<()> {
+async fn test_priority_fee_by_program_stream_ws(programs: Vec<String>) -> Result<()> {
     let ws = WebSocketClient::new(None).await?;
     let mut stream = ws.get_priority_fee_by_program_stream(programs).await?;
 
