@@ -64,7 +64,8 @@ Please refer to the `tests` directory for more examples.
 1. When running more than one integration test, you must use the flag `--test-threads=1`.
 1. Using the network `TESTNET`, as detailed in `SETUP.md`, will submit the transaction to Solana mainnet. The `TESTNET` network setting will route your transaction to Solana Trader API's test instance which, in turn, will submit the transaction Solana mainnet.
 1. The SDK is currently not multi-process safe. For example, the following code will panic:
-```
+
+```rust
 use solana_trader_client_rust::{
     common::constants::SAMPLE_OWNER_ADDR,
     provider::grpc::GrpcClient,
