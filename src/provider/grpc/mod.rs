@@ -234,6 +234,7 @@ impl GrpcClient {
     pub async fn sign_and_submit_paladin<T: IntoTransactionMessage + Clone>(
         &mut self,
         tx: T,
+        revert_protection: bool,
     ) -> Result<String> {
         let block_hash = self
             .client
@@ -249,6 +250,7 @@ impl GrpcClient {
             transaction: Some(TransactionMessageV2 {
                 content: signed_tx.content,
             }),
+            revert_protection: Some(revert_protection),
         };
 
         let signature = self
