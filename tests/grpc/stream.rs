@@ -7,6 +7,28 @@ use solana_trader_proto::api;
 use test_case::test_case;
 use tokio_stream::StreamExt;
 
+#[test_case(1 ; "pump fun amm pool stream")]
+#[tokio::test]
+#[ignore]
+async fn test_pump_new_amm_pool(expected_pool: usize) -> Result<()> {
+    let mut client = GrpcClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
+    let mut stream = client.get_pump_fun_new_amm_pool_stream().await?;
+
+    println!("starting pump fun amm pool stream");
+
+    for pool_num in 1..=expected_pool {
+        let response = stream
+            .next()
+            .await
+            .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))?
+            .map_err(|e| anyhow::anyhow!("Stream error: {}", e))?;
+
+        println!("New Pump Swap pool {} received: {:#?}", pool_num, response);
+    }
+
+    Ok(())
+}
+
 #[test_case(
     vec![api::Project::PRaydium],
     vec![WRAPPED_SOL.to_string()] ;
