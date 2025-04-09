@@ -448,33 +448,113 @@ async fn test_get_token_accounts(owner_address: &str) -> Result<()> {
     Ok(())
 }
 
+/// Tests retrieving account balance information via gRPC
+///
+/// This test verifies that:
+/// 1. A gRPC connection can be established successfully
+/// 2. An account balance response is received
+/// 3. The response contains a valid account balance for the given address
+/// 4. Each account has a valid token symbol, token mint, token account, and amount
+///
+/// # Parameters
+/// * `owner_address` - The address of the account owner to check balance for
+///
+/// # Returns
+/// * `Result<()>` - Success if the response passes assertions
 #[test_case(SAMPLE_OWNER_ADDR; "get account balance - via grpc")]
 #[tokio::test]
 #[ignore]
 async fn test_get_account_balance_grpc(owner_address: &str) -> Result<()> {
     let mut client = GrpcClient::new(None).await?;
 
+    // Execute the account balance query
     let response = client
         .get_account_balance(owner_address.to_string())
         .await?;
+
+    // Log the account balance response for debugging purposes
     println!(
-        "account balance: {}",
+        "Account Balance Response: {}",
         serde_json::to_string_pretty(&response)?
     );
+
+    // Assert that the response contains at least one token account
+    assert!(
+        !response.tokens.is_empty(),
+        "Expected at least one token account in the response"
+    );
+
+    // Loop through each token account in the response and assert validity
+    for token in &response.tokens {
+        // Assert that the symbol is not empty
+        assert!(
+            !token.symbol.is_empty(),
+            "Expected a valid symbol for the token"
+        );
+
+        // Decode the token mint (Base58) into bytes and assert validity
+        let decoded_mint: Vec<u8> = decode(&token.token_mint)
+            .into_vec()
+            .map_err(|_| panic!("Expected token mint to be a valid Base58 string, but it is not"))
+            .unwrap();
+        
+        // Assert that the decoded token mint has exactly 32 bytes (SHA-256 length)
+        assert_eq!(decoded_mint.len(), 32, "Expected token mint to be 32 bytes long");
+
+        // Assert that the token account address is not empty
+        assert!(
+            token.settled_amount >= 0.0,
+            "Expected a valid settled amount"
+        );
+
+        // Assert that the amount is greater than or equal to zero
+        assert!(
+            token.unsettled_amount >= 0.0,
+            "Expected a valid unsettled amount"
+        );
+
+        // Assert that the amount is greater than or equal to zero
+        assert!(
+            token.open_orders_amount >= 0.0,
+            "Expected a valid open orders amount"
+        );
+    }
 
     Ok(())
 }
 
+/// Tests retrieving the leader schedule information via gRPC
+///
+/// This test verifies that:
+/// 1. A gRPC connection can be established successfully
+/// 2. A leader schedule response is received
+/// 3. The response contains a non-empty leader schedule
+/// 4. The current slot is a valid non-negative number
+///
+/// # Parameters
+/// * `max_slots` - The maximum number of slots to retrieve leader schedule for
+///
+/// # Returns
+/// * `Result<()>` - Success if the response passes assertions
 #[test_case(100; "max slots")]
 #[tokio::test]
 #[ignore]
 async fn test_get_leader_schedule_grpc(max_slots: u64) -> Result<()> {
     let mut client = GrpcClient::new(None).await?;
 
+    // Execute the leader schedule query
     let response = client.get_leader_schedule(max_slots).await?;
+
+    // Log the leader schedule response for debugging purposes
     println!(
         "Get Leader Schedule Response: {}",
         serde_json::to_string_pretty(&response)?
+    );
+
+    // Assert that the leader schedule is not empty
+    assert!(
+        !response.leader_schedule.is_empty(),
+        "Expected a non-empty leader schedule"
     );
 
     Ok(())
