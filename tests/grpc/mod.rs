@@ -98,29 +98,6 @@ async fn test_get_rate_limit_grpc() -> Result<()> {
 
     Ok(())
 }
-#[test_case(SAMPLE_OWNER_ADDR)]
-#[tokio::test]
-#[ignore]
-async fn test_get_account_balance_v2_grpc(owner_addr: &str) -> Result<()> {
-    let mut client = GrpcClient::new(None).await?;
-
-    let request = api::GetAccountBalanceRequest {
-        owner_address: owner_addr.to_string(),
-    };
-
-    let response = client.get_account_balance_v2(&request).await?;
-    println!(
-        "GetAccountBalanceV2 Response: {}",
-        serde_json::to_string_pretty(&response)?
-    );
-
-    assert!(
-        !response.tokens.is_empty(),
-        "Expected at least one token account"
-    );
-
-    Ok(())
-}
 
 #[test_case(api::Project::PJupiter, None; "Jupiter get priority fee - via grpc")]
 #[test_case(api::Project::PRaydium, None; "Raydium get priority fee - via grpc")]
@@ -159,23 +136,6 @@ async fn test_get_token_accounts(owner_address: &str) -> Result<()> {
     let response = client.get_token_accounts(owner_address.to_string()).await?;
     println!(
         "token accounts: {}",
-        serde_json::to_string_pretty(&response)?
-    );
-
-    Ok(())
-}
-
-#[test_case(SAMPLE_OWNER_ADDR; "get account balance - via grpc")]
-#[tokio::test]
-#[ignore]
-async fn test_get_account_balance_grpc(owner_address: &str) -> Result<()> {
-    let mut client = GrpcClient::new(None).await?;
-
-    let response = client
-        .get_account_balance(owner_address.to_string())
-        .await?;
-    println!(
-        "account balance: {}",
         serde_json::to_string_pretty(&response)?
     );
 

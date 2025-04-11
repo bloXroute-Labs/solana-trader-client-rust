@@ -98,28 +98,6 @@ async fn test_get_rate_limit_ws() -> Result<()> {
     Ok(())
 }
 
-#[test_case(SAMPLE_OWNER_ADDR)]
-#[tokio::test]
-#[ignore]
-async fn test_get_account_balance_v2_ws(owner_addr: &str) -> Result<()> {
-    let client = WebSocketClient::new(None).await?;
-
-    let request = api::GetAccountBalanceRequest {
-        owner_address: owner_addr.to_string(),
-    };
-
-    let response = client.get_account_balance_v2(request).await?;
-    println!(
-        "GetAccountBalanceV2 Response: {}",
-        serde_json::to_string_pretty(&response)?
-    );
-    assert!(
-        !response.tokens.is_empty(),
-        "Expected at least one token account"
-    );
-    Ok(())
-}
-
 #[test_case(api::Project::PJupiter, None; "Jupiter get priority fee - via ws")]
 #[test_case(api::Project::PRaydium, None; "Raydium get priority fee - via ws")]
 #[tokio::test]
@@ -177,28 +155,6 @@ async fn test_get_token_accounts_ws(owner_address: &str) -> Result<()> {
 
     println!(
         "token accounts: {}",
-        serde_json::to_string_pretty(&response)?
-    );
-
-    client.close().await?;
-    Ok(())
-}
-
-#[test_case(SAMPLE_OWNER_ADDR; "get account balance - via ws")]
-#[tokio::test]
-#[ignore]
-async fn test_get_account_balance_ws(owner_address: &str) -> Result<()> {
-    let client = WebSocketClient::new(None).await?;
-
-    let response = timeout(
-        Duration::from_secs(10),
-        client.get_account_balance(owner_address.to_string()),
-    )
-    .await
-    .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
-
-    println!(
-        "account balance: {}",
         serde_json::to_string_pretty(&response)?
     );
 

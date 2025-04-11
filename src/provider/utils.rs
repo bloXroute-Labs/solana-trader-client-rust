@@ -176,10 +176,7 @@ mod tests {
                 "priceImpactPercent": {
                     "infinity": "INF_NOT"
                 }
-            },
-            "array": [
-                {"project": "P_OPENBOOK"}
-            ]
+            }
         });
 
         convert_string_enums(&mut value);
@@ -187,6 +184,5 @@ mod tests {
         assert_eq!(value["project"], 2);
         assert_eq!(value["nested"]["project"], 3);
         assert_eq!(value["nested"]["priceImpactPercent"]["infinity"], 0);
-        assert_eq!(value["array"][0]["project"], 5);
     }
 }

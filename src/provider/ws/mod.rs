@@ -237,16 +237,6 @@ impl WebSocketClient {
         self.conn.request("GetRateLimit", params).await
     }
 
-    pub async fn get_account_balance_v2(
-        &self,
-        request: api::GetAccountBalanceRequest,
-    ) -> anyhow::Result<api::GetAccountBalanceResponse> {
-        let params = serde_json::to_value(request)
-            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
-
-        self.conn.request("GetAccountBalanceV2", params).await
-    }
-
     pub async fn get_priority_fee(
         &self,
         project: api::Project,
@@ -285,18 +275,6 @@ impl WebSocketClient {
             .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
 
         self.conn.request("GetTokenAccounts", params).await
-    }
-
-    pub async fn get_account_balance(
-        &self,
-        owner_address: String,
-    ) -> Result<api::GetAccountBalanceResponse> {
-        let request = api::GetAccountBalanceRequest { owner_address };
-
-        let params = serde_json::to_value(request)
-            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
-
-        self.conn.request("GetAccountBalance", params).await
     }
 
     pub async fn get_leader_schedule(
