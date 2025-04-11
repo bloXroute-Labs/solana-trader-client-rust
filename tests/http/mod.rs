@@ -215,3 +215,59 @@ async fn test_submit_snipe_http() -> Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+#[ignore]
+async fn test_sign_and_submit_paladin_http() -> anyhow::Result<()> {
+    // Create a new HTTP client
+    let client = HTTPClient::new(None)?;
+    
+    // Get a recent block hash
+    let block_hash = client
+        .get_recent_block_hash_v2(&GetRecentBlockHashRequestV2 { offset: 0 })
+        .await?
+        .block_hash
+        .parse::<Hash>()?;
+
+    // Get public key and keypair
+    let pubkey = client.public_key.unwrap();
+    let keypair = client.get_keypair()?;
+    
+    // Create compute budget instruction to set compute unit price
+    let compute_unit_price = 200_000_000;
+    let compute_budget_ix = solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_price(
+        compute_unit_price,
+    );
+    
+    // Create a transfer instruction
+    let transfer_amount = 10_000_000;
+    let recipient = Pubkey::from_str("HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY")?;
+    let transfer_ix = system_instruction::transfer(&pubkey, &recipient, transfer_amount);
+    
+    // Create a transaction with both instructions
+    let transaction = solana_sdk::transaction::Transaction::new_signed_with_payer(
+        &[compute_budget_ix, transfer_ix],
+        Some(&pubkey),
+        &[&keypair],
+        block_hash,
+    );
+
+    // Serialize the transaction 
+    let serialized_tx = bincode::serialize(&transaction)?;
+    let encoded_tx = general_purpose::STANDARD.encode(serialized_tx);
+    
+    // Create a transaction message using TransactionMessageV2
+    let transaction_message = api::TransactionMessageV2 {
+        content: encoded_tx,
+    };
+    
+    // Call sign_and_submit_paladin with the transaction message
+    let signature = client.sign_and_submit_paladin(transaction_message, true).await?;
+    
+    println!("Paladin HTTP Transaction Signature: {}", signature);
+    
+    // Add assertion to verify the signature is not empty
+    assert!(!signature.is_empty(), "Expected a valid transaction signature");
+    
+    Ok(())
+}

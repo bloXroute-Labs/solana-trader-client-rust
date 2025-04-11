@@ -7,6 +7,23 @@ use solana_trader_client_rust::{
 use solana_trader_proto::api;
 use test_case::test_case;
 
+#[tokio::test]
+#[ignore]
+async fn test_pump_fun_new_amm_pool_streams() -> Result<()> {
+    let ws = WebSocketClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
+    let mut stream = ws.get_pump_fun_new_amm_pool_stream().await?;
+
+    let response = stream
+        .next()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))??;
+
+    println!("Response received: {:#?}", response);
+
+    ws.close().await?;
+    Ok(())
+}
+
 #[test_case(
     vec![api::Project::PRaydium],
     vec![WRAPPED_SOL.to_string()] ;

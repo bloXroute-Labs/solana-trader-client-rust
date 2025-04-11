@@ -72,6 +72,7 @@ impl HTTPClient {
     }
 
     async fn handle_response<T: DeserializeOwned>(&self, response: reqwest::Response) -> Result<T> {
+        println!("Response: {:?}", response);
         if !response.status().is_success() {
             let error_text = response
                 .text()
@@ -238,6 +239,7 @@ impl HTTPClient {
     pub async fn sign_and_submit_paladin<T: IntoTransactionMessage + Clone>(
         &self,
         tx: T,
+        revert_protection: bool,
     ) -> Result<String> {
         let response = self
             .client
@@ -255,7 +257,7 @@ impl HTTPClient {
         let request_json = json!({
             "transaction": {
                 "content": signed_tx.content,
-                "isCleanup": signed_tx.is_cleanup
+            "revertProtection": revert_protection,
             }
         });
 

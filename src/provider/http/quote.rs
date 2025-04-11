@@ -105,49 +105,6 @@ impl HTTPClient {
         self.handle_response(response).await
     }
 
-    pub async fn get_quotes(
-        &self,
-        in_token: &str,
-        out_token: &str,
-        in_amount: f64,
-        slippage: f64,
-        limit: i32,
-        projects: &[api::Project],
-    ) -> Result<api::GetQuotesResponse> {
-        let project_params: Vec<String> = projects
-            .iter()
-            .map(|p| format!("&project={}", *p as i32))
-            .collect();
-
-        let url = format!(
-            "{}/api/v1/market/quote?inToken={}&outToken={}&inAmount={}&slippage={}&limit={}{}",
-            self.base_url,
-            in_token,
-            out_token,
-            in_amount,
-            slippage,
-            limit,
-            project_params.join("")
-        );
-
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| anyhow::anyhow!("HTTP GET request failed: {}", e))?;
-
-        let response_text = response.text().await?;
-
-        let mut value: serde_json::Value = serde_json::from_str(&response_text)
-            .map_err(|e| anyhow::anyhow!("Failed to parse response as JSON: {}", e))?;
-
-        convert_string_enums(&mut value);
-
-        serde_json::from_value(value)
-            .map_err(|e| anyhow::anyhow!("Failed to parse response into GetQuotesResponse: {}", e))
-    }
-
     pub async fn get_raydium_prices(
         &self,
         tokens: Vec<String>,

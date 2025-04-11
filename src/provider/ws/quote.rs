@@ -63,16 +63,6 @@ impl WebSocketClient {
         self.conn.request("GetJupiterQuotes", params).await
     }
 
-    pub async fn get_quotes(
-        &self,
-        request: &api::GetQuotesRequest,
-    ) -> Result<api::GetQuotesResponse> {
-        let params = serde_json::to_value(request)
-            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
-
-        self.conn.request("GetQuotes", params).await
-    }
-
     pub async fn get_raydium_prices(
         &self,
         tokens: Vec<String>,

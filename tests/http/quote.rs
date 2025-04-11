@@ -194,54 +194,6 @@ async fn test_jupiter_quotes_http(
     Ok(())
 }
 
-// TODO:
-// Error: Failed to parse response into GetQuotesResponse: missing field `inToken`
-#[test_case(
-    "So11111111111111111111111111111111111111112",
-    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    0.01,
-    5.0,
-    5,
-    vec![api::Project::PAll];
-    "SOL to USDC aggregated quotes via HTTP"
-)]
-#[tokio::test]
-#[ignore]
-async fn test_get_quotes_http(
-    in_token: &str,
-    out_token: &str,
-    in_amount: f64,
-    slippage: f64,
-    limit: i32,
-    projects: Vec<api::Project>,
-) -> Result<()> {
-    let client = HTTPClient::new(None)?;
-
-    let response = client
-        .get_quotes(in_token, out_token, in_amount, slippage, limit, &projects)
-        .await?;
-    println!(
-        "Aggregated Quotes: {}",
-        serde_json::to_string_pretty(&response)?
-    );
-
-    assert!(
-        response.quotes.len() == 2,
-        "Expected exactly 2 quotes in response, got {}",
-        response.quotes.len()
-    );
-
-    for quote in &response.quotes {
-        assert!(
-            !quote.routes.is_empty(),
-            "No routes found for project {}",
-            quote.project
-        );
-    }
-
-    Ok(())
-}
-
 #[test_case(
     vec![
         "So11111111111111111111111111111111111111112".to_string(),

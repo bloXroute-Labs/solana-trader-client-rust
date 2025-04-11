@@ -4,6 +4,14 @@ use solana_trader_proto::api;
 use tokio_stream::Stream;
 
 impl WebSocketClient {
+    pub async fn get_pump_fun_new_amm_pool_stream(
+        &self,
+    ) -> Result<impl Stream<Item = Result<api::GetPumpFunNewAmmPoolStreamResponse>>> {
+        let request = api::GetPumpFunNewAmmPoolStreamRequest {};
+
+        self.conn.stream_proto("GetPumpFunNewAmmPoolStream", &request).await
+    }
+    
     pub async fn get_prices_stream(
         &self,
         projects: Vec<api::Project>,

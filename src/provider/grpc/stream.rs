@@ -6,6 +6,20 @@ use tonic::Streaming;
 use super::GrpcClient;
 
 impl GrpcClient {
+    pub async fn get_pump_fun_new_amm_pool_stream(
+        &mut self,
+    ) -> Result<Streaming<api::GetPumpFunNewAmmPoolStreamResponse>> {
+        let request = Request::new(api::GetPumpFunNewAmmPoolStreamRequest {});
+
+        let response = self
+            .client
+            .get_pump_fun_new_amm_pool_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetPumpFunNewAmmPoolStream error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+    
     pub async fn get_prices_stream(
         &mut self,
         projects: Vec<api::Project>,

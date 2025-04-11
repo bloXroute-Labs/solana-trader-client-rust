@@ -172,6 +172,7 @@ impl WebSocketClient {
     pub async fn sign_and_submit_paladin<T: IntoTransactionMessage + Clone>(
         &self,
         tx: T,
+        revert_protection: bool,
     ) -> Result<String> {
         let hash_res: GetRecentBlockHashResponseV2 =
             self.conn.request("GetRecentBlockHashV2", json!({})).await?;
@@ -182,8 +183,8 @@ impl WebSocketClient {
         let request = json!({
             "transaction": {
                 "content": signed_tx.content,
-                "isCleanup": signed_tx.is_cleanup
-            }
+            },
+            "revertProtection": revert_protection
         });
 
         let response: serde_json::Value = self.conn.request("PostSubmitPaladinV2", request).await?;
