@@ -1,5 +1,3 @@
-use crate::provider::utils::convert_string_enums;
-
 use super::HTTPClient;
 use anyhow::{anyhow, Result};
 use solana_trader_proto::api;
