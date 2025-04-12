@@ -34,6 +34,28 @@ impl WebSocketClient {
         self.conn.request("GetRaydiumCLMMQuotes", params).await
     }
 
+    pub async fn get_raydium_clmm_pools(
+        &self,
+        pair_or_address: String
+    ) -> Result<api::GetRaydiumClmmPoolsResponse> {
+        let request = api::GetRaydiumClmmPoolsRequest { pair_or_address };
+        self.conn.request("GetRaydiumCLMMPools", json!(request)).await
+    }
+    
+    pub async fn get_raydium_pool_reserve(
+        &self,
+        pairs_or_addresses: Vec<String>
+    ) -> Result<api::GetRaydiumPoolReserveRequest> {
+        let request = api::GetRaydiumPoolReserveRequest { pairs_or_addresses };
+        self.conn.request("GetRaydiumPoolReserve", json!(request)).await
+    }
+    
+    pub async fn get_raydium_pools(
+        &self
+    ) -> Result<api::GetRaydiumPoolsResponse> {
+        self.conn.request("GetRaydiumPools", json!({})).await
+    }
+
     pub async fn get_pump_fun_quotes(
         &self,
         request: &api::GetPumpFunQuotesRequest,

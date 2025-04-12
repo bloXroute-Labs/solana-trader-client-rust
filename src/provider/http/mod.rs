@@ -179,6 +179,89 @@ impl HTTPClient {
         Ok(signatures)
     }
 
+    pub async fn post_submit_batch(
+        &self,
+        entries: Vec<api::PostSubmitRequestEntry>,
+        submit_strategy: api::SubmitStrategy,
+        use_bundle: Option<bool>,
+        front_running_protection: Option<bool>
+    ) -> anyhow::Result<api::PostSubmitBatchResponse> {
+        let url = format!("{}/api/v1/trade/submit-batch", self.base_url);
+        println!("{}", url);
+        
+        let request_json = json!({
+            "entries": entries,
+            "submitStrategy": submit_strategy,
+            "useBundle": use_bundle,
+            "frontRunningProtection": front_running_protection
+        });
+        
+        let response = self
+            .client
+            .post(&url)
+            .json(&request_json)
+            .send()
+            .await?;
+            
+        let result: api::PostSubmitBatchResponse = self.handle_response(response).await?;
+        
+        Ok(result)
+    }
+
+    pub async fn post_submit_batch_v2(
+        &self,
+        entries: Vec<api::PostSubmitRequestEntry>,
+        submit_strategy: api::SubmitStrategy,
+        use_bundle: Option<bool>,
+        front_running_protection: Option<bool>
+    ) -> anyhow::Result<api::PostSubmitBatchResponse> {
+        let url = format!("{}/api/v2/submit-batch", self.base_url);
+        println!("{}", url);
+        
+        let request_json = json!({
+            "entries": entries,
+            "submitStrategy": submit_strategy,
+            "useBundle": use_bundle,
+            "frontRunningProtection": front_running_protection
+        });
+        
+        let response = self
+            .client
+            .post(&url)
+            .json(&request_json)
+            .send()
+            .await?;
+            
+        let result: api::PostSubmitBatchResponse = self.handle_response(response).await?;
+        
+        Ok(result)
+    }
+
+    pub async fn post_submit_paladin_v2(
+        &self,
+        transaction: api::TransactionMessageV2,
+        revert_protection: Option<bool>
+    ) -> anyhow::Result<api::PostSubmitResponse> {
+        let url = format!("{}/api/v2/submit-paladin", self.base_url);
+        println!("{}", url);
+        
+        let request_json = json!({
+            "transaction": transaction,
+            "revertProtection": revert_protection
+        });
+        
+        let response = self
+            .client
+            .post(&url)
+            .json(&request_json)
+            .send()
+            .await?;
+            
+        let result: api::PostSubmitResponse = self.handle_response(response).await?;
+        
+        Ok(result)
+    }
+
     pub async fn sign_and_submit_snipe<T: IntoTransactionMessage + Clone>(
         &self,
         txs: Vec<T>,
@@ -234,6 +317,70 @@ impl HTTPClient {
             .collect();
 
         Ok(signatures)
+    }
+
+    pub async fn post_submit_snipe_v2(
+        &self,
+        entries: Vec<api::PostSubmitRequestEntry>,
+        use_staked_rpcs: Option<bool>
+    ) -> anyhow::Result<api::PostSubmitSnipeResponse> {
+        let url = format!("{}/api/v2/submit-snipe", self.base_url);
+        println!("{}", url);
+        
+        let request_json = json!({
+            "entries": entries,
+            "useStakedRPCs": use_staked_rpcs
+        });
+        
+        let response = self
+            .client
+            .post(&url)
+            .json(&request_json)
+            .send()
+            .await?;
+            
+        let result: api::PostSubmitSnipeResponse = self.handle_response(response).await?;
+        
+        Ok(result)
+    }
+    
+    pub async fn post_submit_v2(
+        &self,
+        transaction: api::TransactionMessage,
+        skip_pre_flight: bool,
+        front_running_protection: Option<bool>,
+        tip: Option<u64>,
+        use_staked_rpcs: Option<bool>,
+        fast_best_effort: Option<bool>,
+        allow_back_run: Option<bool>,
+        revenue_address: Option<String>,
+        sniping: Option<bool>
+    ) -> anyhow::Result<api::PostSubmitResponse> {
+        let url = format!("{}/api/v2/submit", self.base_url);
+        println!("{}", url);
+        
+        let request_json = json!({
+            "transaction": transaction,
+            "skipPreFlight": skip_pre_flight,
+            "frontRunningProtection": front_running_protection,
+            "tip": tip,
+            "useStakedRPCs": use_staked_rpcs,
+            "fastBestEffort": fast_best_effort,
+            "allowBackRun": allow_back_run,
+            "revenueAddress": revenue_address,
+            "sniping": sniping
+        });
+        
+        let response = self
+            .client
+            .post(&url)
+            .json(&request_json)
+            .send()
+            .await?;
+            
+        let result: api::PostSubmitResponse = self.handle_response(response).await?;
+        
+        Ok(result)
     }
 
     pub async fn sign_and_submit_paladin<T: IntoTransactionMessage + Clone>(
@@ -317,6 +464,7 @@ impl HTTPClient {
 
         self.handle_response(response).await
     }
+
     pub async fn get_recent_block_hash(&self) -> anyhow::Result<api::GetRecentBlockHashResponse> {
         let url = format!("{}/api/v1/system/blockhash", self.base_url);
 
@@ -330,6 +478,60 @@ impl HTTPClient {
             .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
 
         self.handle_response(response).await
+    }
+
+    pub async fn get_server_time(&self) -> anyhow::Result<api::GetServerTimeResponse> {
+        let url = format!("{}/api/v1/system/time", self.base_url);
+
+        println!("{}", url);
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
+
+        self.handle_response(response).await
+    }
+
+    pub async fn post_submit(
+        &self, 
+        transaction: api::TransactionMessage,
+        skip_pre_flight: bool,
+        front_running_protection: Option<bool>,
+        tip: Option<u64>,
+        use_staked_rpcs: Option<bool>,
+        fast_best_effort: Option<bool>,
+        allow_back_run: Option<bool>,
+        revenue_address: Option<String>,
+        sniping: Option<bool>
+    ) -> anyhow::Result<api::PostSubmitResponse> {
+        let url = format!("{}/api/v1/trade/submit", self.base_url);
+        println!("{}", url);
+        
+        let request_json = json!({
+            "transaction": transaction,
+            "skipPreFlight": skip_pre_flight,
+            "frontRunningProtection": front_running_protection,
+            "tip": tip,
+            "useStakedRPCs": use_staked_rpcs,
+            "fastBestEffort": fast_best_effort,
+            "allowBackRun": allow_back_run,
+            "revenueAddress": revenue_address,
+            "sniping": sniping
+        });
+        
+        let response = self
+            .client
+            .post(format!("{}/api/v1/trade/submit", self.base_url))
+            .json(&request_json)
+            .send()
+            .await?;
+            
+        let result: api::PostSubmitResponse = self.handle_response(response).await?;
+        
+        Ok(result)
     }
 
     pub async fn get_recent_block_hash_v2(

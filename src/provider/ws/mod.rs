@@ -310,4 +310,41 @@ impl WebSocketClient {
 
         self.conn.request("GetLeaderSchedule", params).await
     }
+
+    pub async fn get_server_time(
+        &self
+    ) -> Result<api::GetServerTimeResponse> {
+        self.conn.request("GetServerTime", json!({})).await
+    }
+
+    pub async fn post_submit(
+        &self,
+        request: &api::PostSubmitRequest
+    ) -> Result<api::PostSubmitResponse> {
+        let params = json!({
+            "transaction": request.transaction,
+            "skipPreFlight": request.skip_pre_flight,
+            "frontRunningProtection": request.front_running_protection,
+            "tip": request.tip,
+            "useStakedRPCs": request.use_staked_rp_cs,
+            "fastBestEffort": request.fast_best_effort,
+            "allowBackRun": request.allow_back_run,
+            "revenueAddress": request.revenue_address,
+            "sniping": request.sniping
+        });
+        self.conn.request("PostSubmit", params).await
+    }
+
+    pub async fn post_submit_batch(
+        &self,
+        request: &api::PostSubmitBatchRequest
+    ) -> Result<api::PostSubmitBatchResponse> {
+        let params = json!({
+            "entries": request.entries,
+            "submitStrategy": request.submit_strategy,
+            "useBundle": request.use_bundle,
+            "frontRunningProtection": request.front_running_protection
+        });
+        self.conn.request("PostSubmitBatch", params).await
+    }
 }

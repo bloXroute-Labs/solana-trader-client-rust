@@ -8,6 +8,7 @@ use crate::{
 
 use super::HTTPClient;
 use anyhow::Result;
+use serde_json::json;
 use base64::{engine::general_purpose, Engine};
 use solana_sdk::{
     message::{v0, VersionedMessage},
@@ -248,4 +249,83 @@ impl HTTPClient {
 
         self.handle_response(response).await
     }
+
+    pub async fn post_pump_fun_swap(
+        &self,
+        user_address: String,
+        bonding_curve_address: String,
+        token_address: String,
+        token_amount: f64,
+        sol_threshold: f64,
+        is_buy: bool,
+        slippage: f64,
+        compute_limit: u32,
+        compute_price: u64,
+        tip: Option<u64>
+    ) -> anyhow::Result<api::PostPumpFunSwapResponse> {
+        let url = format!("{}/api/v2/pumpfun/swap", self.base_url);
+        println!("{}", url);
+        
+        let request_json = json!({
+            "userAddress": user_address,
+            "bondingCurveAddress": bonding_curve_address,
+            "tokenAddress": token_address,
+            "tokenAmount": token_amount,
+            "solThreshold": sol_threshold,
+            "isBuy": is_buy,
+            "slippage": slippage,
+            "computeLimit": compute_limit,
+            "computePrice": compute_price,
+            "tip": tip
+        });
+        
+        let response = self
+            .client
+            .post(&url)
+            .json(&request_json)
+            .send()
+            .await?;
+            
+        let result: api::PostPumpFunSwapResponse = self.handle_response(response).await?;
+        
+        Ok(result)
+    }
+
+    pub async fn post_pump_fun_swap_sol(
+        &self,
+        user_address: String,
+        bonding_curve_address: String,
+        token_address: String,
+        sol_amount: f64,
+        slippage: f64,
+        compute_limit: u32,
+        compute_price: u64,
+        tip: Option<u64>
+    ) -> anyhow::Result<api::PostPumpFunSwapResponse> {
+        let url = format!("{}/api/v2/pumpfun/swap-sol", self.base_url);
+        println!("{}", url);
+        
+        let request_json = json!({
+            "userAddress": user_address,
+            "bondingCurveAddress": bonding_curve_address,
+            "tokenAddress": token_address,
+            "solAmount": sol_amount,
+            "slippage": slippage,
+            "computeLimit": compute_limit,
+            "computePrice": compute_price,
+            "tip": tip
+        });
+        
+        let response = self
+            .client
+            .post(&url)
+            .json(&request_json)
+            .send()
+            .await?;
+            
+        let result: api::PostPumpFunSwapResponse = self.handle_response(response).await?;
+        
+        Ok(result)
+    }
+
 }
