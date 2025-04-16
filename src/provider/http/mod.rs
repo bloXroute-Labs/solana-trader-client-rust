@@ -300,7 +300,8 @@ impl HTTPClient {
 
         let request_json = json!({
             "entries": entries,
-            "useStakedRPCs": use_staked_rpcs
+            "useStakedRPCs": use_staked_rpcs,
+            "timestamp": timestamp_rfc3339()
         });
 
         let response = self

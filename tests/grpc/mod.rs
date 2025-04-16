@@ -1,15 +1,23 @@
 pub mod memo;
+// Local modules
 pub mod quote;
 pub mod stream;
 pub mod swap;
 
+// Standard library
 use std::str::FromStr;
 
+// External crates
 use anyhow::Result;
+use test_case::test_case;
 use base64::{engine::general_purpose, Engine};
 use solana_hash::Hash;
 use solana_sdk::{
-    pubkey::Pubkey, signature::Signature, signer::Signer as _, system_instruction,
+    compute_budget::ComputeBudgetInstruction,
+    pubkey::Pubkey,
+    signature::Signature,
+    signer::Signer as _,
+    system_instruction,
     transaction::Transaction,
 };
 use solana_trader_client_rust::{
@@ -17,12 +25,19 @@ use solana_trader_client_rust::{
         constants::{SAMPLE_OWNER_ADDR, SAMPLE_TX_SIGNATURE},
         signing::{create_signed_transaction, SubmitParams},
     },
-    provider::grpc::GrpcClient,
+    provider::{
+        grpc::GrpcClient,
+        utils::timestamp,
+    },
 };
-use solana_trader_proto::api::{self, PostSubmitPaladinRequest, PostSubmitRequest,GetRecentBlockHashRequestV2, TransactionMessage, TransactionMessageV2};
-use test_case::test_case;
-use solana_trader_client_rust::provider::utils::timestamp;
-use solana_sdk::compute_budget::ComputeBudgetInstruction;
+use solana_trader_proto::api::{
+    self,
+    GetRecentBlockHashRequestV2,
+    PostSubmitPaladinRequest,
+    PostSubmitRequest,
+    TransactionMessage,
+    TransactionMessageV2,
+};
 
 #[tokio::test]
 #[ignore]

@@ -1,25 +1,42 @@
+// Local modules
 pub mod memo;
 pub mod quote;
 pub mod stream;
 pub mod swap;
 
+// Standard library
+use std::{str::FromStr, time::Duration};
+
+// External crates
 use anyhow::Result;
 use base64::{engine::general_purpose, Engine};
-use solana_sdk::{pubkey::Pubkey, system_instruction, transaction::Transaction};
-use std::{str::FromStr, time::Duration};
+use test_case::test_case;
+use solana_hash::Hash;
+use solana_sdk::{
+    pubkey::Pubkey,
+    system_instruction,
+    transaction::Transaction,
+};
 use tokio::time::timeout;
 
-use solana_hash::Hash;
+// Project crates
 use solana_trader_client_rust::{
     common::{
         constants::{SAMPLE_OWNER_ADDR, SAMPLE_TX_SIGNATURE},
         signing::create_signed_transaction,
     },
-    provider::ws::WebSocketClient,
-    provider::utils::timestamp,
+    provider::{
+        utils::timestamp,
+        ws::WebSocketClient,
+    },
 };
-use solana_trader_proto::api::{self, PostSubmitRequest, GetRecentBlockHashRequestV2, TransactionMessage, TransactionMessageV2};
-use test_case::test_case;
+use solana_trader_proto::api::{
+    self,
+    GetRecentBlockHashRequestV2,
+    PostSubmitRequest,
+    TransactionMessage,
+    TransactionMessageV2,
+};
 
 #[tokio::test]
 #[ignore]

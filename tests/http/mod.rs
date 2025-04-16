@@ -1,14 +1,18 @@
+// Local modules
 pub mod memo;
 pub mod quote;
 pub mod swap;
 
+// Standard library
 use std::str::FromStr;
 
+// External crates
 use anyhow::Result;
-
+use test_case::test_case;
 use base64::{engine::general_purpose, Engine};
 use solana_hash::Hash;
 use solana_sdk::{pubkey::Pubkey, system_instruction};
+use solana_trader_proto::api::{self, GetRecentBlockHashRequestV2, TransactionMessage};
 use solana_trader_client_rust::{
     common::{
         constants::{SAMPLE_OWNER_ADDR, SAMPLE_TX_SIGNATURE},
@@ -16,8 +20,134 @@ use solana_trader_client_rust::{
     },
     provider::http::HTTPClient,
 };
-use solana_trader_proto::api::{self, GetRecentBlockHashRequestV2, TransactionMessage};
-use test_case::test_case;
+
+#[tokio::test]
+#[ignore]
+async fn test_post_submit() -> anyhow::Result<()> {
+    // Initialize client
+    let client = HTTPClient::new(None)?;
+
+    let block_hash = client.
+        get_recent_block_hash().
+        await?
+        .block_hash
+        .parse::<Hash>()?;
+    
+    // Define constants
+    const BLXROUTE_MIN_TIP: u64 = 1_000_000;
+    const SEND_AMOUNT_LAMPORTS: u64 = 1;
+    const TIP_WALLET: &str = "HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY";
+    
+    // Get client's public key and keypair
+    let pubkey = client.public_key.ok_or_else(|| anyhow::anyhow!("Missing public key"))?;
+    let keypair = client.get_keypair()?;
+    
+    // Parse recipient address
+    let tip_wallet = Pubkey::from_str(TIP_WALLET)?;
+    
+    // Create transaction instructions
+    let instructions = vec![
+        system_instruction::transfer(&pubkey, &tip_wallet, BLXROUTE_MIN_TIP),
+        system_instruction::transfer(&pubkey, &pubkey, SEND_AMOUNT_LAMPORTS),
+    ];
+    
+    // Create and sign transaction
+    let tx = create_signed_transaction(
+        instructions,
+        &pubkey,
+        keypair,
+        block_hash,
+    )?;
+    
+    // Serialize transaction
+    let serialized_tx = bincode::serialize(&tx)?;
+    let transaction_message = TransactionMessage {
+        content: general_purpose::STANDARD.encode(serialized_tx),
+        is_cleanup: false,
+    };
+    
+    // Submit transaction and handle response
+    let response = client.post_submit(
+        transaction_message,                // transaction
+        false,                              // skip preflight
+        Some(false),                        // frp
+        Some(BLXROUTE_MIN_TIP),             // tip
+        Some(true),                         // allow back run
+        Some(false),                        // staked
+        Some(false),                        // fast best effort
+        None,                               // revenue address
+        Some(false),                        // sniping
+    ).await?;
+    
+    // Log response for debugging
+    println!("PostSubmit Response: {}", serde_json::to_string_pretty(&response)?);
+    
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_post_submit_v2() -> anyhow::Result<()> {
+    // Initialize client
+    let client = HTTPClient::new(None)?;
+
+    let block_hash = client.
+        get_recent_block_hash().
+        await?
+        .block_hash
+        .parse::<Hash>()?;
+    
+    // Define constants
+    const BLXROUTE_MIN_TIP: u64 = 1_000_000;
+    const SEND_AMOUNT_LAMPORTS: u64 = 1;
+    const TIP_WALLET: &str = "HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY";
+    
+    // Get client's public key and keypair
+    let pubkey = client.public_key.ok_or_else(|| anyhow::anyhow!("Missing public key"))?;
+    let keypair = client.get_keypair()?;
+    
+    // Parse recipient address
+    let tip_wallet = Pubkey::from_str(TIP_WALLET)?;
+    
+    // Create transaction instructions
+    let instructions = vec![
+        system_instruction::transfer(&pubkey, &tip_wallet, BLXROUTE_MIN_TIP),
+        system_instruction::transfer(&pubkey, &pubkey, SEND_AMOUNT_LAMPORTS),
+    ];
+    
+    // Create and sign transaction
+    let tx = create_signed_transaction(
+        instructions,
+        &pubkey,
+        keypair,
+        block_hash,
+    )?;
+    
+    // Serialize transaction
+    let serialized_tx = bincode::serialize(&tx)?;
+    let transaction_message = TransactionMessage {
+        content: general_purpose::STANDARD.encode(serialized_tx),
+        is_cleanup: false,
+    };
+    
+    // Submit transaction and handle response
+    let response = client.post_submit_v2(
+        transaction_message,                // transaction
+        false,                              // skip preflight
+        Some(false),                        // frp
+        Some(BLXROUTE_MIN_TIP),             // tip
+        Some(true),                         // allow back run
+        Some(false),                        // staked
+        Some(false),                        // fast best effort
+        None,                               // revenue address
+        Some(false),                        // sniping
+    ).await?;
+    
+    // Log response for debugging
+    println!("PostSubmit Response: {}", serde_json::to_string_pretty(&response)?);
+    
+    Ok(())
+}
 
 #[test_case(SAMPLE_TX_SIGNATURE)]
 #[tokio::test]
