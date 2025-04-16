@@ -10,6 +10,7 @@ use serde::de::DeserializeOwned;
 use serde_json::json;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair};
 use solana_trader_proto::api::{self, GetRecentBlockHashResponseV2};
+use crate::provider::utils::timestamp_rfc3339;
 
 use crate::{
     common::{
@@ -193,7 +194,8 @@ impl HTTPClient {
             "entries": entries,
             "submitStrategy": submit_strategy,
             "useBundle": use_bundle,
-            "frontRunningProtection": front_running_protection
+            "frontRunningProtection": front_running_protection,
+            "timestamp": timestamp_rfc3339()
         });
         
         let response = self
@@ -222,7 +224,8 @@ impl HTTPClient {
             "entries": entries,
             "submitStrategy": submit_strategy,
             "useBundle": use_bundle,
-            "frontRunningProtection": front_running_protection
+            "frontRunningProtection": front_running_protection,
+            "timestamp": timestamp_rfc3339()
         });
         
         let response = self
@@ -247,7 +250,8 @@ impl HTTPClient {
         
         let request_json = json!({
             "transaction": transaction,
-            "revertProtection": revert_protection
+            "revertProtection": revert_protection,
+            "timestamp": timestamp_rfc3339()
         });
         
         let response = self
@@ -329,7 +333,8 @@ impl HTTPClient {
         
         let request_json = json!({
             "entries": entries,
-            "useStakedRPCs": use_staked_rpcs
+            "useStakedRPCs": use_staked_rpcs,
+            "timestamp": timestamp_rfc3339()
         });
         
         let response = self
@@ -368,7 +373,8 @@ impl HTTPClient {
             "fastBestEffort": fast_best_effort,
             "allowBackRun": allow_back_run,
             "revenueAddress": revenue_address,
-            "sniping": sniping
+            "sniping": sniping,
+            "timestamp": timestamp_rfc3339()
         });
         
         let response = self
@@ -403,9 +409,9 @@ impl HTTPClient {
 
         let request_json = json!({
             "transaction": {
-                "content": signed_tx.content,
-            "revertProtection": revert_protection,
-            }
+                "content": signed_tx.content
+            },
+            "revertProtection": revert_protection
         });
 
         let response = self
@@ -519,7 +525,8 @@ impl HTTPClient {
             "fastBestEffort": fast_best_effort,
             "allowBackRun": allow_back_run,
             "revenueAddress": revenue_address,
-            "sniping": sniping
+            "sniping": sniping,
+            "timestamp": timestamp_rfc3339()
         });
         
         let response = self

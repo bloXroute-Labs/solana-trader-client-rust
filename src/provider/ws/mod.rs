@@ -11,6 +11,7 @@ use solana_trader_proto::api::{self, GetRecentBlockHashResponseV2};
 use crate::common::signing::{sign_transaction, SubmitParams};
 use crate::common::{get_base_url_from_env, is_submit_only_endpoint, ws_endpoint, BaseConfig};
 use crate::connections::ws::WS;
+use crate::provider::utils::timestamp_rfc3339;
 
 use super::utils::IntoTransactionMessage;
 
@@ -153,7 +154,8 @@ impl WebSocketClient {
 
         let request = json!({
             "entries": entries,
-            "useStakedRPCs": use_staked_rpcs
+            "useStakedRPCs": use_staked_rpcs,
+            "timestamp": timestamp_rfc3339()
         });
 
         let response: serde_json::Value = self.conn.request("PostSubmitSnipeV2", request).await?;
@@ -184,7 +186,8 @@ impl WebSocketClient {
             "transaction": {
                 "content": signed_tx.content,
             },
-            "revertProtection": revert_protection
+            "revertProtection": revert_protection,
+            "timestamp": timestamp_rfc3339()
         });
 
         let response: serde_json::Value = self.conn.request("PostSubmitPaladinV2", request).await?;
@@ -330,9 +333,29 @@ impl WebSocketClient {
             "fastBestEffort": request.fast_best_effort,
             "allowBackRun": request.allow_back_run,
             "revenueAddress": request.revenue_address,
-            "sniping": request.sniping
+            "sniping": request.sniping,
+            "timestamp": timestamp_rfc3339()
         });
         self.conn.request("PostSubmit", params).await
+    }
+
+    pub async fn post_submit_v2(
+        &self,
+        request: &api::PostSubmitRequest
+    ) -> Result<api::PostSubmitResponse> {
+        let params = json!({
+            "transaction": request.transaction,
+            "skipPreFlight": request.skip_pre_flight,
+            "frontRunningProtection": request.front_running_protection,
+            "tip": request.tip,
+            "useStakedRPCs": request.use_staked_rp_cs,
+            "fastBestEffort": request.fast_best_effort,
+            "allowBackRun": request.allow_back_run,
+            "revenueAddress": request.revenue_address,
+            "sniping": request.sniping,
+            "timestamp": timestamp_rfc3339()
+        });
+        self.conn.request("PostSubmitV2", params).await
     }
 
     pub async fn post_submit_batch(
@@ -343,7 +366,8 @@ impl WebSocketClient {
             "entries": request.entries,
             "submitStrategy": request.submit_strategy,
             "useBundle": request.use_bundle,
-            "frontRunningProtection": request.front_running_protection
+            "frontRunningProtection": request.front_running_protection,
+            "timestamp": timestamp_rfc3339()
         });
         self.conn.request("PostSubmitBatch", params).await
     }

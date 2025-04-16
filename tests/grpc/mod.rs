@@ -19,8 +19,218 @@ use solana_trader_client_rust::{
     },
     provider::grpc::GrpcClient,
 };
-use solana_trader_proto::api::{self, GetRecentBlockHashRequestV2, TransactionMessage, TransactionMessageV2};
+use solana_trader_proto::api::{self, PostSubmitPaladinRequest, PostSubmitRequest,GetRecentBlockHashRequestV2, TransactionMessage, TransactionMessageV2};
 use test_case::test_case;
+use solana_trader_client_rust::provider::utils::timestamp;
+use solana_sdk::compute_budget::ComputeBudgetInstruction;
+
+#[tokio::test]
+#[ignore]
+async fn test_post_submit() -> anyhow::Result<()> {
+    // Initialize client
+    let mut client = GrpcClient::new(None).await?;
+    
+    // Get recent block hash
+    let block_hash = client
+        .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
+        .await?
+        .block_hash
+        .parse::<Hash>()?;
+    
+    // Define constants
+    const BLXROUTE_MIN_TIP: u64 = 1_000_000;
+    const SEND_AMOUNT_LAMPORTS: u64 = 1;
+    const TIP_WALLET: &str = "HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY";
+    
+    // Get client's public key and keypair
+    let pubkey = client.public_key.ok_or_else(|| anyhow::anyhow!("Missing public key"))?;
+    let keypair = client.get_keypair()?;
+    
+    // Parse recipient address
+    let tip_wallet = Pubkey::from_str(TIP_WALLET)?;
+    
+    // Create transaction instructions
+    let instructions = vec![
+        system_instruction::transfer(&pubkey, &tip_wallet, BLXROUTE_MIN_TIP),
+        system_instruction::transfer(&pubkey, &pubkey, SEND_AMOUNT_LAMPORTS),
+    ];
+    
+    // Create and sign transaction
+    let tx = create_signed_transaction(
+        instructions,
+        &pubkey,
+        keypair,
+        block_hash,
+    )?;
+    
+    // Serialize transaction
+    let serialized_tx = bincode::serialize(&tx)?;
+    let transaction_message = TransactionMessage {
+        content: general_purpose::STANDARD.encode(serialized_tx),
+        is_cleanup: false,
+    };
+    
+    // Create submit request with default options
+    let request = PostSubmitRequest {
+        transaction: Some(transaction_message),
+        skip_pre_flight: false,
+        front_running_protection: Some(false),
+        tip: Some(BLXROUTE_MIN_TIP),
+        allow_back_run: Some(true),
+        use_staked_rp_cs: Some(false),
+        fast_best_effort: Some(false),
+        revenue_address: None,
+        sniping: Some(false),
+        timestamp: timestamp(),
+        submit_protection: None,
+    };
+    
+    // Submit transaction and handle response
+    let response = client.post_submit(&request).await?;
+    
+    // Log response for debugging
+    println!("PostSubmit Response: {}", serde_json::to_string_pretty(&response)?);
+    
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_post_submit_v2() -> anyhow::Result<()> {
+    // Initialize client
+    let mut client = GrpcClient::new(None).await?;
+    
+    // Get recent block hash
+    let block_hash = client
+        .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
+        .await?
+        .block_hash
+        .parse::<Hash>()?;
+    
+    // Define constants
+    const BLXROUTE_MIN_TIP: u64 = 1_000_000;
+    const SEND_AMOUNT_LAMPORTS: u64 = 1;
+    const TIP_WALLET: &str = "HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY";
+    
+    // Get client's public key and keypair
+    let pubkey = client.public_key.ok_or_else(|| anyhow::anyhow!("Missing public key"))?;
+    let keypair = client.get_keypair()?;
+    
+    // Parse recipient address
+    let tip_wallet = Pubkey::from_str(TIP_WALLET)?;
+    
+    // Create transaction instructions
+    let instructions = vec![
+        system_instruction::transfer(&pubkey, &tip_wallet, BLXROUTE_MIN_TIP),
+        system_instruction::transfer(&pubkey, &pubkey, SEND_AMOUNT_LAMPORTS),
+    ];
+    
+    // Create and sign transaction
+    let tx = create_signed_transaction(
+        instructions,
+        &pubkey,
+        keypair,
+        block_hash,
+    )?;
+    
+    // Serialize transaction
+    let serialized_tx = bincode::serialize(&tx)?;
+    let transaction_message = TransactionMessage {
+        content: general_purpose::STANDARD.encode(serialized_tx),
+        is_cleanup: false,
+    };
+    
+    // Create submit request with default options
+    let request = PostSubmitRequest {
+        transaction: Some(transaction_message),
+        skip_pre_flight: false,
+        front_running_protection: Some(false),
+        tip: Some(BLXROUTE_MIN_TIP),
+        allow_back_run: Some(true),
+        use_staked_rp_cs: Some(false),
+        fast_best_effort: Some(false),
+        revenue_address: None,
+        sniping: Some(false),
+        timestamp: timestamp(),
+        submit_protection: None,
+    };
+    
+    // Submit transaction and handle response
+    let response = client.post_submit_v2(&request).await?;
+    
+    // Log response for debugging
+    println!("PostSubmitV2 Response: {}", serde_json::to_string_pretty(&response)?);
+    
+    Ok(())
+}
+
+// ************** READ *****************
+// Running this test will cost ~0.05 SOL
+// ************** READ *****************
+#[tokio::test]
+#[ignore]
+async fn test_post_submit_paladin_v2() -> anyhow::Result<()> {
+    // Initialize client
+    let mut client = GrpcClient::new(None).await?;
+    
+    // Get recent block hash
+    let block_hash = client
+        .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
+        .await?
+        .block_hash
+        .parse::<Hash>()?;
+    
+    // Define constants
+    const BLXROUTE_MIN_TIP: u64 = 10_000_000;
+    const SEND_AMOUNT_LAMPORTS: u64 = 1;
+    const TIP_WALLET: &str = "HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY";
+    const PRIORITY_FEE_MICROLAMPORTS: u64 = 40_000_000;
+    const COMPUTE_BUDGET_UNITS: u32 = 1_000_000;
+    
+    // Get client's public key and keypair
+    let pubkey = client.public_key.ok_or_else(|| anyhow::anyhow!("Missing public key"))?;
+    let keypair = client.get_keypair()?;
+    
+    // Parse recipient address
+    let tip_wallet = Pubkey::from_str(TIP_WALLET)?;
+    
+    // Create transaction instructions
+    let instructions = vec![
+        ComputeBudgetInstruction::set_compute_unit_limit(COMPUTE_BUDGET_UNITS),
+        ComputeBudgetInstruction::set_compute_unit_price(PRIORITY_FEE_MICROLAMPORTS),
+        system_instruction::transfer(&pubkey, &tip_wallet, BLXROUTE_MIN_TIP),
+        system_instruction::transfer(&pubkey, &pubkey, SEND_AMOUNT_LAMPORTS),
+    ];
+    
+    // Create and sign transaction
+    let tx = create_signed_transaction(
+        instructions,
+        &pubkey,
+        keypair,
+        block_hash,
+    )?;
+    
+    // Serialize transaction
+    let serialized_tx = bincode::serialize(&tx)?;
+    let transaction_message = TransactionMessageV2 {
+        content: general_purpose::STANDARD.encode(serialized_tx),
+    };
+    
+    // Create submit request with default options
+    let request = PostSubmitPaladinRequest {
+        transaction: Some(transaction_message),
+        revert_protection: Some(false),
+        timestamp: timestamp()
+    };
+    
+    // Submit transaction and handle response
+    let response = client.post_submit_paladin_v2(&request).await?;
+    
+    // Log response for debugging
+    println!("PostSubmitPaladinV2 Response: {}", serde_json::to_string_pretty(&response)?);
+    
+    Ok(())
+}
 
 #[test_case(SAMPLE_TX_SIGNATURE)]
 #[tokio::test]
@@ -33,10 +243,7 @@ async fn test_get_transaction_grpc(signature: &str) -> Result<()> {
     };
 
     let response = client.get_transaction(&request).await?;
-    println!(
-        "Get Transaction Response: {}",
-        serde_json::to_string_pretty(&response)?
-    );
+    println!("Get Transaction Response: {:?}", response);
     assert!(response.slot > 0, "Expected a lot in the tx response");
 
     Ok(())
