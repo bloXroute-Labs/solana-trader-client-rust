@@ -6,7 +6,7 @@ use anyhow::{anyhow, Result};
 use serde_json::json;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
-use solana_trader_proto::api::{self, GetRecentBlockHashResponseV2};
+use solana_trader_proto::api::{self, PostSubmitPaladinRequest, GetRecentBlockHashResponseV2};
 
 use crate::common::signing::{sign_transaction, SubmitParams};
 use crate::common::{get_base_url_from_env, is_submit_only_endpoint, ws_endpoint, BaseConfig};
@@ -337,6 +337,19 @@ impl WebSocketClient {
             "timestamp": timestamp_rfc3339()
         });
         self.conn.request("PostSubmit", params).await
+    }
+
+    pub async fn post_submit_paladin_v2(
+        &mut self,
+        request: &PostSubmitPaladinRequest,
+    ) -> Result<api::PostSubmitResponse> {
+
+        let params = json!({
+            "transaction": request.transaction,
+            "revertProtection": request.revert_protection,
+            "timestamp": timestamp_rfc3339()
+        });
+        self.conn.request("PostSubmitPaladinV2", params).await
     }
 
     pub async fn post_submit_v2(

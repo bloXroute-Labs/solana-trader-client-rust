@@ -14,6 +14,7 @@ use base64::{engine::general_purpose, Engine};
 use solana_hash::Hash;
 use solana_sdk::{
     compute_budget::ComputeBudgetInstruction,
+    instruction::Instruction,
     pubkey::Pubkey,
     signature::Signature,
     signer::Signer as _,
@@ -39,6 +40,81 @@ use solana_trader_proto::api::{
     TransactionMessageV2,
 };
 
+// Constants for tests
+const BLXROUTE_MIN_TIP: u64 = 1_000_000;
+const PALADIN_MIN_TIP: u64 = 10_000_001;
+const BLOXROUTE_TIP_WALLET: &str = "HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY";
+const PALADIN_MIN_PRIORITY_FEE_MICROLAMPORTS: u64 = 40_000_001;
+const PALADIN_MIN_COMPUTE_BUDGET_UNITS: u32 = 1_000_000;
+const SEND_AMOUNT_LAMPORTS: u64 = 1;
+
+// Helper function to create standard transfer instructions
+fn create_transfer_instructions(from: &Pubkey, tip_amount: u64) -> anyhow::Result<Vec<Instruction>> {
+    let tip_wallet = Pubkey::from_str(BLOXROUTE_TIP_WALLET)?;
+    
+    Ok(vec![
+        system_instruction::transfer(from, &tip_wallet, tip_amount),
+        system_instruction::transfer(from, from, SEND_AMOUNT_LAMPORTS),
+    ])
+}
+
+// Helper function to create paladin instructions with compute budget
+fn create_paladin_instructions(from: &Pubkey, tip_amount: u64) -> anyhow::Result<Vec<Instruction>> {
+    let tip_wallet = Pubkey::from_str(BLOXROUTE_TIP_WALLET)?;
+    
+    Ok(vec![
+        ComputeBudgetInstruction::set_compute_unit_limit(PALADIN_MIN_COMPUTE_BUDGET_UNITS),
+        ComputeBudgetInstruction::set_compute_unit_price(PALADIN_MIN_PRIORITY_FEE_MICROLAMPORTS),
+        system_instruction::transfer(from, &tip_wallet, tip_amount),
+        system_instruction::transfer(from, from, SEND_AMOUNT_LAMPORTS),
+    ])
+}
+
+// Helper function to prepare transaction message
+fn prepare_transaction_message(tx: Transaction) -> anyhow::Result<TransactionMessage> {
+    let serialized_tx = bincode::serialize(&tx)?;
+    
+    Ok(TransactionMessage {
+        content: general_purpose::STANDARD.encode(serialized_tx),
+        is_cleanup: false,
+    })
+}
+
+// Helper function to prepare paladin transaction message
+fn prepare_paladin_transaction_message(tx: Transaction) -> anyhow::Result<TransactionMessageV2> {
+    let serialized_tx = bincode::serialize(&tx)?;
+    
+    Ok(TransactionMessageV2 {
+        content: general_purpose::STANDARD.encode(serialized_tx),
+    })
+}
+
+// Helper function to create default submit request
+fn create_submit_request(transaction_message: TransactionMessage) -> PostSubmitRequest {
+    PostSubmitRequest {
+        transaction: Some(transaction_message),
+        skip_pre_flight: false,
+        front_running_protection: Some(false),
+        tip: Some(BLXROUTE_MIN_TIP),
+        allow_back_run: Some(true),
+        use_staked_rp_cs: Some(false),
+        fast_best_effort: Some(false),
+        revenue_address: None,
+        sniping: Some(false),
+        timestamp: timestamp(),
+        submit_protection: None,
+    }
+}
+
+// Helper function to create paladin submit request
+fn create_paladin_submit_request(transaction_message: TransactionMessageV2) -> PostSubmitPaladinRequest {
+    PostSubmitPaladinRequest {
+        transaction: Some(transaction_message),
+        revert_protection: Some(false),
+        timestamp: timestamp()
+    }
+}
+
 #[tokio::test]
 #[ignore]
 async fn test_post_submit() -> anyhow::Result<()> {
@@ -52,23 +128,12 @@ async fn test_post_submit() -> anyhow::Result<()> {
         .block_hash
         .parse::<Hash>()?;
     
-    // Define constants
-    const BLXROUTE_MIN_TIP: u64 = 1_000_000;
-    const SEND_AMOUNT_LAMPORTS: u64 = 1;
-    const TIP_WALLET: &str = "HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY";
-    
     // Get client's public key and keypair
     let pubkey = client.public_key.ok_or_else(|| anyhow::anyhow!("Missing public key"))?;
     let keypair = client.get_keypair()?;
     
-    // Parse recipient address
-    let tip_wallet = Pubkey::from_str(TIP_WALLET)?;
-    
     // Create transaction instructions
-    let instructions = vec![
-        system_instruction::transfer(&pubkey, &tip_wallet, BLXROUTE_MIN_TIP),
-        system_instruction::transfer(&pubkey, &pubkey, SEND_AMOUNT_LAMPORTS),
-    ];
+    let instructions = create_transfer_instructions(&pubkey, BLXROUTE_MIN_TIP)?;
     
     // Create and sign transaction
     let tx = create_signed_transaction(
@@ -78,27 +143,11 @@ async fn test_post_submit() -> anyhow::Result<()> {
         block_hash,
     )?;
     
-    // Serialize transaction
-    let serialized_tx = bincode::serialize(&tx)?;
-    let transaction_message = TransactionMessage {
-        content: general_purpose::STANDARD.encode(serialized_tx),
-        is_cleanup: false,
-    };
+    // Prepare transaction message
+    let transaction_message = prepare_transaction_message(tx)?;
     
-    // Create submit request with default options
-    let request = PostSubmitRequest {
-        transaction: Some(transaction_message),
-        skip_pre_flight: false,
-        front_running_protection: Some(false),
-        tip: Some(BLXROUTE_MIN_TIP),
-        allow_back_run: Some(true),
-        use_staked_rp_cs: Some(false),
-        fast_best_effort: Some(false),
-        revenue_address: None,
-        sniping: Some(false),
-        timestamp: timestamp(),
-        submit_protection: None,
-    };
+    // Create submit request
+    let request = create_submit_request(transaction_message);
     
     // Submit transaction and handle response
     let response = client.post_submit(&request).await?;
@@ -122,23 +171,12 @@ async fn test_post_submit_v2() -> anyhow::Result<()> {
         .block_hash
         .parse::<Hash>()?;
     
-    // Define constants
-    const BLXROUTE_MIN_TIP: u64 = 1_000_000;
-    const SEND_AMOUNT_LAMPORTS: u64 = 1;
-    const TIP_WALLET: &str = "HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY";
-    
     // Get client's public key and keypair
     let pubkey = client.public_key.ok_or_else(|| anyhow::anyhow!("Missing public key"))?;
     let keypair = client.get_keypair()?;
     
-    // Parse recipient address
-    let tip_wallet = Pubkey::from_str(TIP_WALLET)?;
-    
     // Create transaction instructions
-    let instructions = vec![
-        system_instruction::transfer(&pubkey, &tip_wallet, BLXROUTE_MIN_TIP),
-        system_instruction::transfer(&pubkey, &pubkey, SEND_AMOUNT_LAMPORTS),
-    ];
+    let instructions = create_transfer_instructions(&pubkey, BLXROUTE_MIN_TIP)?;
     
     // Create and sign transaction
     let tx = create_signed_transaction(
@@ -148,27 +186,11 @@ async fn test_post_submit_v2() -> anyhow::Result<()> {
         block_hash,
     )?;
     
-    // Serialize transaction
-    let serialized_tx = bincode::serialize(&tx)?;
-    let transaction_message = TransactionMessage {
-        content: general_purpose::STANDARD.encode(serialized_tx),
-        is_cleanup: false,
-    };
+    // Prepare transaction message
+    let transaction_message = prepare_transaction_message(tx)?;
     
-    // Create submit request with default options
-    let request = PostSubmitRequest {
-        transaction: Some(transaction_message),
-        skip_pre_flight: false,
-        front_running_protection: Some(false),
-        tip: Some(BLXROUTE_MIN_TIP),
-        allow_back_run: Some(true),
-        use_staked_rp_cs: Some(false),
-        fast_best_effort: Some(false),
-        revenue_address: None,
-        sniping: Some(false),
-        timestamp: timestamp(),
-        submit_protection: None,
-    };
+    // Create submit request
+    let request = create_submit_request(transaction_message);
     
     // Submit transaction and handle response
     let response = client.post_submit_v2(&request).await?;
@@ -195,27 +217,12 @@ async fn test_post_submit_paladin_v2() -> anyhow::Result<()> {
         .block_hash
         .parse::<Hash>()?;
     
-    // Define constants
-    const BLXROUTE_MIN_TIP: u64 = 10_000_000;
-    const SEND_AMOUNT_LAMPORTS: u64 = 1;
-    const TIP_WALLET: &str = "HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY";
-    const PRIORITY_FEE_MICROLAMPORTS: u64 = 40_000_000;
-    const COMPUTE_BUDGET_UNITS: u32 = 1_000_000;
-    
     // Get client's public key and keypair
     let pubkey = client.public_key.ok_or_else(|| anyhow::anyhow!("Missing public key"))?;
     let keypair = client.get_keypair()?;
     
-    // Parse recipient address
-    let tip_wallet = Pubkey::from_str(TIP_WALLET)?;
-    
-    // Create transaction instructions
-    let instructions = vec![
-        ComputeBudgetInstruction::set_compute_unit_limit(COMPUTE_BUDGET_UNITS),
-        ComputeBudgetInstruction::set_compute_unit_price(PRIORITY_FEE_MICROLAMPORTS),
-        system_instruction::transfer(&pubkey, &tip_wallet, BLXROUTE_MIN_TIP),
-        system_instruction::transfer(&pubkey, &pubkey, SEND_AMOUNT_LAMPORTS),
-    ];
+    // Create transaction instructions with compute budget settings
+    let instructions = create_paladin_instructions(&pubkey, PALADIN_MIN_TIP)?;
     
     // Create and sign transaction
     let tx = create_signed_transaction(
@@ -225,18 +232,11 @@ async fn test_post_submit_paladin_v2() -> anyhow::Result<()> {
         block_hash,
     )?;
     
-    // Serialize transaction
-    let serialized_tx = bincode::serialize(&tx)?;
-    let transaction_message = TransactionMessageV2 {
-        content: general_purpose::STANDARD.encode(serialized_tx),
-    };
+    // Prepare paladin transaction message
+    let transaction_message = prepare_paladin_transaction_message(tx)?;
     
-    // Create submit request with default options
-    let request = PostSubmitPaladinRequest {
-        transaction: Some(transaction_message),
-        revert_protection: Some(false),
-        timestamp: timestamp()
-    };
+    // Create paladin submit request
+    let request = create_paladin_submit_request(transaction_message);
     
     // Submit transaction and handle response
     let response = client.post_submit_paladin_v2(&request).await?;

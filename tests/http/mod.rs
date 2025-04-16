@@ -11,15 +11,78 @@ use anyhow::Result;
 use test_case::test_case;
 use base64::{engine::general_purpose, Engine};
 use solana_hash::Hash;
-use solana_sdk::{pubkey::Pubkey, system_instruction};
-use solana_trader_proto::api::{self, GetRecentBlockHashRequestV2, TransactionMessage};
+use solana_sdk::{
+    transaction::Transaction,
+    pubkey::Pubkey, system_instruction,
+    instruction::Instruction,
+    compute_budget::ComputeBudgetInstruction,
+};
+use solana_trader_proto::api::{self, PostSubmitPaladinRequest, GetRecentBlockHashRequestV2, TransactionMessage, TransactionMessageV2};
 use solana_trader_client_rust::{
     common::{
         constants::{SAMPLE_OWNER_ADDR, SAMPLE_TX_SIGNATURE},
         signing::create_signed_transaction,
     },
-    provider::http::HTTPClient,
+    provider::{http::HTTPClient, utils::timestamp},
 };
+
+// Constants for tests
+const BLXROUTE_MIN_TIP: u64 = 1_000_000;
+const PALADIN_MIN_TIP: u64 = 10_000_001;
+const BLOXROUTE_TIP_WALLET: &str = "HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY";
+const PALADIN_MIN_PRIORITY_FEE_MICROLAMPORTS: u64 = 40_000_001;
+const PALADIN_MIN_COMPUTE_BUDGET_UNITS: u32 = 1_000_000;
+const SEND_AMOUNT_LAMPORTS: u64 = 1;
+
+// Helper function to create standard transfer instructions
+fn create_transfer_instructions(from: &Pubkey, tip_amount: u64) -> anyhow::Result<Vec<Instruction>> {
+    let tip_wallet = Pubkey::from_str(BLOXROUTE_TIP_WALLET)?;
+    
+    Ok(vec![
+        system_instruction::transfer(from, &tip_wallet, tip_amount),
+        system_instruction::transfer(from, from, SEND_AMOUNT_LAMPORTS),
+    ])
+}
+
+// Helper function to create paladin instructions with compute budget
+fn create_paladin_instructions(from: &Pubkey, tip_amount: u64) -> anyhow::Result<Vec<Instruction>> {
+    let tip_wallet = Pubkey::from_str(BLOXROUTE_TIP_WALLET)?;
+    
+    Ok(vec![
+        ComputeBudgetInstruction::set_compute_unit_limit(PALADIN_MIN_COMPUTE_BUDGET_UNITS),
+        ComputeBudgetInstruction::set_compute_unit_price(PALADIN_MIN_PRIORITY_FEE_MICROLAMPORTS),
+        system_instruction::transfer(from, &tip_wallet, tip_amount),
+        system_instruction::transfer(from, from, SEND_AMOUNT_LAMPORTS),
+    ])
+}
+
+// Helper function to prepare transaction message
+fn prepare_transaction_message(tx: Transaction) -> anyhow::Result<TransactionMessage> {
+    let serialized_tx = bincode::serialize(&tx)?;
+    
+    Ok(TransactionMessage {
+        content: general_purpose::STANDARD.encode(serialized_tx),
+        is_cleanup: false,
+    })
+}
+
+// Helper function to prepare paladin transaction message
+fn prepare_paladin_transaction_message(tx: Transaction) -> anyhow::Result<TransactionMessageV2> {
+    let serialized_tx = bincode::serialize(&tx)?;
+    
+    Ok(TransactionMessageV2 {
+        content: general_purpose::STANDARD.encode(serialized_tx),
+    })
+}
+
+// Helper function to create paladin submit request
+fn create_paladin_submit_request(transaction_message: TransactionMessageV2) -> PostSubmitPaladinRequest {
+    PostSubmitPaladinRequest {
+        transaction: Some(transaction_message),
+        revert_protection: Some(false),
+        timestamp: timestamp()
+    }
+}
 
 #[tokio::test]
 #[ignore]
@@ -27,29 +90,19 @@ async fn test_post_submit() -> anyhow::Result<()> {
     // Initialize client
     let client = HTTPClient::new(None)?;
 
-    let block_hash = client.
-        get_recent_block_hash().
-        await?
+    // Get recent block hash
+    let block_hash = client
+        .get_recent_block_hash()
+        .await?
         .block_hash
         .parse::<Hash>()?;
-    
-    // Define constants
-    const BLXROUTE_MIN_TIP: u64 = 1_000_000;
-    const SEND_AMOUNT_LAMPORTS: u64 = 1;
-    const TIP_WALLET: &str = "HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY";
     
     // Get client's public key and keypair
     let pubkey = client.public_key.ok_or_else(|| anyhow::anyhow!("Missing public key"))?;
     let keypair = client.get_keypair()?;
     
-    // Parse recipient address
-    let tip_wallet = Pubkey::from_str(TIP_WALLET)?;
-    
     // Create transaction instructions
-    let instructions = vec![
-        system_instruction::transfer(&pubkey, &tip_wallet, BLXROUTE_MIN_TIP),
-        system_instruction::transfer(&pubkey, &pubkey, SEND_AMOUNT_LAMPORTS),
-    ];
+    let instructions = create_transfer_instructions(&pubkey, BLXROUTE_MIN_TIP)?;
     
     // Create and sign transaction
     let tx = create_signed_transaction(
@@ -59,12 +112,8 @@ async fn test_post_submit() -> anyhow::Result<()> {
         block_hash,
     )?;
     
-    // Serialize transaction
-    let serialized_tx = bincode::serialize(&tx)?;
-    let transaction_message = TransactionMessage {
-        content: general_purpose::STANDARD.encode(serialized_tx),
-        is_cleanup: false,
-    };
+    // Prepare transaction message
+    let transaction_message = prepare_transaction_message(tx)?;
     
     // Submit transaction and handle response
     let response = client.post_submit(
@@ -80,7 +129,7 @@ async fn test_post_submit() -> anyhow::Result<()> {
     ).await?;
     
     // Log response for debugging
-    println!("PostSubmit Response: {}", serde_json::to_string_pretty(&response)?);
+    println!("HTTP PostSubmit Response: {}", serde_json::to_string_pretty(&response)?);
     
     Ok(())
 }
@@ -91,29 +140,19 @@ async fn test_post_submit_v2() -> anyhow::Result<()> {
     // Initialize client
     let client = HTTPClient::new(None)?;
 
-    let block_hash = client.
-        get_recent_block_hash().
-        await?
+    // Get recent block hash
+    let block_hash = client
+        .get_recent_block_hash()
+        .await?
         .block_hash
         .parse::<Hash>()?;
-    
-    // Define constants
-    const BLXROUTE_MIN_TIP: u64 = 1_000_000;
-    const SEND_AMOUNT_LAMPORTS: u64 = 1;
-    const TIP_WALLET: &str = "HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY";
     
     // Get client's public key and keypair
     let pubkey = client.public_key.ok_or_else(|| anyhow::anyhow!("Missing public key"))?;
     let keypair = client.get_keypair()?;
     
-    // Parse recipient address
-    let tip_wallet = Pubkey::from_str(TIP_WALLET)?;
-    
     // Create transaction instructions
-    let instructions = vec![
-        system_instruction::transfer(&pubkey, &tip_wallet, BLXROUTE_MIN_TIP),
-        system_instruction::transfer(&pubkey, &pubkey, SEND_AMOUNT_LAMPORTS),
-    ];
+    let instructions = create_transfer_instructions(&pubkey, BLXROUTE_MIN_TIP)?;
     
     // Create and sign transaction
     let tx = create_signed_transaction(
@@ -123,12 +162,8 @@ async fn test_post_submit_v2() -> anyhow::Result<()> {
         block_hash,
     )?;
     
-    // Serialize transaction
-    let serialized_tx = bincode::serialize(&tx)?;
-    let transaction_message = TransactionMessage {
-        content: general_purpose::STANDARD.encode(serialized_tx),
-        is_cleanup: false,
-    };
+    // Prepare transaction message
+    let transaction_message = prepare_transaction_message(tx)?;
     
     // Submit transaction and handle response
     let response = client.post_submit_v2(
@@ -144,7 +179,53 @@ async fn test_post_submit_v2() -> anyhow::Result<()> {
     ).await?;
     
     // Log response for debugging
-    println!("PostSubmit Response: {}", serde_json::to_string_pretty(&response)?);
+    println!("HTTP PostSubmitV2 Response: {}", serde_json::to_string_pretty(&response)?);
+    
+    Ok(())
+}
+
+// ************** READ *****************
+// Running this test will cost ~0.05 SOL
+// ************** READ *****************
+#[tokio::test]
+#[ignore]
+async fn test_post_submit_paladin_v2() -> anyhow::Result<()> {
+    // Initialize client
+    let client = HTTPClient::new(None)?;
+
+    // Get recent block hash
+    let block_hash = client
+        .get_recent_block_hash()
+        .await?
+        .block_hash
+        .parse::<Hash>()?;
+    
+    // Get client's public key and keypair
+    let pubkey = client.public_key.ok_or_else(|| anyhow::anyhow!("Missing public key"))?;
+    let keypair = client.get_keypair()?;
+    
+    // Create transaction instructions with compute budget settings
+    let instructions = create_paladin_instructions(&pubkey, PALADIN_MIN_TIP)?;
+    
+    // Create and sign transaction
+    let tx = create_signed_transaction(
+        instructions,
+        &pubkey,
+        keypair,
+        block_hash,
+    )?;
+    
+    // Prepare paladin transaction message
+    let transaction_message = prepare_paladin_transaction_message(tx)?;
+    
+    // Create paladin submit request
+    let request = create_paladin_submit_request(transaction_message);
+    
+    // Submit transaction and handle response
+    let response = client.post_submit_paladin_v2(&request).await?;
+    
+    // Log response for debugging
+    println!("HTTP PostSubmitPaladinV2 Response: {}", serde_json::to_string_pretty(&response)?);
     
     Ok(())
 }

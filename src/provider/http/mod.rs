@@ -9,7 +9,7 @@ use reqwest::{
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair};
-use solana_trader_proto::api::{self, GetRecentBlockHashResponseV2};
+use solana_trader_proto::api::{self, PostSubmitPaladinRequest, GetRecentBlockHashResponseV2};
 use crate::provider::utils::timestamp_rfc3339;
 
 use crate::{
@@ -242,15 +242,14 @@ impl HTTPClient {
 
     pub async fn post_submit_paladin_v2(
         &self,
-        transaction: api::TransactionMessageV2,
-        revert_protection: Option<bool>
+        request: &PostSubmitPaladinRequest
     ) -> anyhow::Result<api::PostSubmitResponse> {
         let url = format!("{}/api/v2/submit-paladin", self.base_url);
         println!("{}", url);
         
         let request_json = json!({
-            "transaction": transaction,
-            "revertProtection": revert_protection,
+            "transaction": request.transaction,
+            "revertProtection": request.revert_protection,
             "timestamp": timestamp_rfc3339()
         });
         
