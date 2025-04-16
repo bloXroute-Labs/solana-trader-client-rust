@@ -6,7 +6,7 @@ use anyhow::Result;
 use rustls::crypto::ring::default_provider;
 use rustls::crypto::CryptoProvider;
 use solana_sdk::pubkey::Pubkey;
-use solana_trader_proto::api::{self, TransactionMessageV2};
+use solana_trader_proto::api::{self, GetServerTimeRequest, PostSubmitBatchRequest, TransactionMessageV2};
 use std::collections::HashMap;
 use tonic::service::Interceptor;
 use tonic::transport::ClientTlsConfig;
@@ -280,13 +280,52 @@ impl GrpcClient {
         &mut self,
         request: &api::GetRecentBlockHashRequest,
     ) -> Result<api::GetRecentBlockHashResponse> {
-        let response = self
+        let response: tonic::Response<api::GetRecentBlockHashResponse> = self
             .client
             .get_recent_block_hash(Request::new(*request))
             .await
             .map_err(|e| anyhow::anyhow!("GetRecentBlockHash error: {}", e))?;
 
         Ok(response.into_inner())
+    }
+
+    pub async fn get_server_time(
+        &mut self,
+        request: &GetServerTimeRequest,
+    ) -> Result<api::GetServerTimeResponse> {
+        let response: tonic::Response<api::GetServerTimeResponse> = self
+            .client
+            .get_server_time(Request::new(*request))
+            .await
+            .map_err(|e| anyhow::anyhow!("GetServerTime error: {}", e))?;
+
+        return Ok(response.into_inner())
+    }
+
+    pub async fn post_submit(
+        &mut self,
+        request: &PostSubmitRequest,
+    ) -> Result<api::PostSubmitResponse> {
+        let response: tonic::Response<api::PostSubmitResponse> = self
+            .client
+            .post_submit(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostSubmit error: {}", e))?;
+
+        return Ok(response.into_inner())
+    }
+
+    pub async fn post_submit_batch(
+        &mut self,
+        request: &PostSubmitBatchRequest,
+    ) -> Result<api::PostSubmitBatchResponse> {
+        let response: tonic::Response<api::PostSubmitBatchResponse> = self
+            .client
+            .post_submit_batch(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostSubmitBatch error: {}", e))?;
+
+        return Ok(response.into_inner())
     }
 
     pub async fn get_recent_block_hash_v2(

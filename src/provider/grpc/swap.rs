@@ -4,7 +4,7 @@ use solana_sdk::{
     message::{v0, VersionedMessage},
     transaction::VersionedTransaction,
 };
-use solana_trader_proto::api;
+use solana_trader_proto::api::{self, PostPumpFunSwapRequestSol};
 use tonic::Request;
 
 use crate::{
@@ -204,6 +204,19 @@ impl GrpcClient {
             .map_err(|e| anyhow::anyhow!("PostPumpFunSwap error: {}", e))?;
 
         Ok(response.into_inner())
+    }
+
+    pub async fn post_pump_fun_swap_sol(
+        &mut self,
+        request: &PostPumpFunSwapRequestSol,
+    ) -> Result<api::PostPumpFunSwapResponse> {
+        let response: tonic::Response<api::PostPumpFunSwapResponse> = self
+            .client
+            .post_pump_fun_swap_sol(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostPumpFunSwapSol error: {}", e))?;
+
+        return Ok(response.into_inner())
     }
 
     pub async fn post_trade_swap(

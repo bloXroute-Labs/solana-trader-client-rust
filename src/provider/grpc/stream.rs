@@ -171,6 +171,25 @@ impl GrpcClient {
         Ok(response.into_inner())
     }
 
+    pub async fn get_quotes_stream(
+        &mut self,
+        projects: Vec<i32>,
+        token_pairs: Vec<api::TokenPair>,
+    ) -> Result<Streaming<api::GetQuotesStreamResponse>> {
+        let request = Request::new(api::GetQuotesStreamRequest {
+            projects,
+            token_pairs,
+        });
+        
+        let response = self
+            .client
+            .get_quotes_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetQuotesStream error: {}", e))?;
+        
+        Ok(response.into_inner())
+    }
+
     pub async fn get_new_raydium_pools_by_transaction_stream(
         &mut self,
     ) -> Result<Streaming<api::GetNewRaydiumPoolsByTransactionResponse>> {

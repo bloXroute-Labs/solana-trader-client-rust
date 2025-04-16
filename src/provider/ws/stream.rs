@@ -212,4 +212,20 @@ impl WebSocketClient {
             .stream_proto("GetPumpFunSwapsStream", &request)
             .await
     }
+    
+
+    pub async fn get_quotes_stream(
+        &self,
+        projects: Vec<i32>,
+        token_pairs: Vec<api::TokenPair>
+    ) -> Result<impl Stream<Item = Result<api::GetPumpFunSwapsStreamResponse>>> {
+        let request = api::GetQuotesStreamRequest {
+            projects,
+            token_pairs,
+        };
+        
+        self.conn
+            .stream_proto("GetQuotesStream", &request)
+            .await
+    }
 }

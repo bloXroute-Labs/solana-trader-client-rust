@@ -44,6 +44,45 @@ impl GrpcClient {
         Ok(response.into_inner())
     }
 
+    pub async fn get_raydium_clmm_pools(
+        &mut self,
+        request: &api::GetRaydiumClmmPoolsRequest,
+    ) -> Result<api::GetRaydiumClmmPoolsResponse> {
+        let response = self
+            .client
+            .get_raydium_clmm_pools(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("GetRaydiumClmmPools error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_raydium_pool_reserve(
+        &mut self,
+        request: &api::GetRaydiumPoolReserveRequest,
+    ) -> Result<api::GetRaydiumPoolReserveResponse> {
+        let response = self
+            .client
+            .get_raydium_pool_reserve(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("GetRaydiumPoolReserve error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
+    pub async fn get_raydium_pools(
+        &mut self,
+        request: &api::GetRaydiumPoolsRequest,
+    ) -> Result<api::GetRaydiumPoolsResponse> {
+        let response = self
+            .client
+            .get_raydium_pools(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("GetRaydiumPools error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+    
     pub async fn get_pump_fun_quotes(
         &mut self,
         request: &api::GetPumpFunQuotesRequest,

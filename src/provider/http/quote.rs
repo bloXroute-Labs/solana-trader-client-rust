@@ -43,6 +43,60 @@ impl HTTPClient {
         self.handle_response(response).await
     }
 
+    pub async fn get_raydium_clmm_pools(
+        &self,
+        pair_or_address: String
+    ) -> anyhow::Result<api::GetRaydiumClmmPoolsResponse> {
+        let url = format!("{}/api/v2/raydium/clmm-pools?pairOrAddress={}", self.base_url, pair_or_address);
+        println!("{}", url);
+        
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await?;
+            
+        let result: api::GetRaydiumClmmPoolsResponse = self.handle_response(response).await?;
+        
+        Ok(result)
+    }
+
+    pub async fn get_raydium_pools(
+        &self
+    ) -> anyhow::Result<api::GetRaydiumPoolsResponse> {
+        let url = format!("{}/api/v2/raydium/pools", self.base_url);
+        println!("{}", url);
+        
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await?;
+            
+        let result: api::GetRaydiumPoolsResponse = self.handle_response(response).await?;
+        
+        Ok(result)
+    }
+
+    pub async fn get_raydium_pool_reserve(
+        &self,
+        pairs_or_addresses: Vec<String>
+    ) -> anyhow::Result<api::GetRaydiumPoolReserveResponse> {
+        let pairs_query = pairs_or_addresses.join(",");
+        let url = format!("{}/api/v2/raydium/pool-reserves?pairsOrAddresses={}", self.base_url, pairs_query);
+        println!("{}", url);
+        
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await?;
+            
+        let result: api::GetRaydiumPoolReserveResponse = self.handle_response(response).await?;
+        
+        Ok(result)
+    }
+
     pub async fn get_raydium_clmm_quotes(
         &self,
         request: &api::GetRaydiumClmmQuotesRequest,

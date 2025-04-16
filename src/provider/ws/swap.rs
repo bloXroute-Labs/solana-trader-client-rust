@@ -263,4 +263,40 @@ impl WebSocketClient {
 
         self.conn.request("PostRouteTradeSwap", params).await
     }
+
+    pub async fn post_pump_fun_swap(
+        &self,
+        request: &api::PostPumpFunSwapRequest
+    ) -> Result<api::PostPumpFunSwapResponse> {
+        let params = json!({
+            "userAddress": request.user_address,
+            "bondingCurveAddress": request.bonding_curve_address,
+            "tokenAddress": request.token_address,
+            "tokenAmount": request.token_amount,
+            "solThreshold": request.sol_threshold,
+            "isBuy": request.is_buy,
+            "slippage": request.slippage,
+            "computeLimit": request.compute_limit,
+            "computePrice": request.compute_price,
+            "tip": request.tip
+        });
+        self.conn.request("PostPumpFunSwap", params).await
+    }
+
+    pub async fn post_pump_fun_swap_sol(
+        &self,
+        request: &api::PostPumpFunSwapRequestSol
+    ) -> Result<api::PostPumpFunSwapResponse> {
+        let params = json!({
+            "userAddress": request.user_address,
+            "bondingCurveAddress": request.bonding_curve_address,
+            "tokenAddress": request.token_address,
+            "solAmount": request.sol_amount,
+            "slippage": request.slippage,
+            "computeLimit": request.compute_limit,
+            "computePrice": request.compute_price,
+            "tip": request.tip
+        });
+        self.conn.request("PostPumpFunSwapSol", params).await
+    }
 }
