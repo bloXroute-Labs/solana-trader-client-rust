@@ -10,7 +10,9 @@ use solana_sdk::{
     transaction::Transaction,
 };
 use solana_trader_proto::api::{self, Project, TransactionMessage, TransactionMessageV2};
-
+use std::time::{SystemTime, UNIX_EPOCH};
+use chrono::{Utc, DateTime};
+use prost_wkt_types::Timestamp;
 pub trait IntoTransactionMessage {
     fn into_transaction_message(self) -> TransactionMessage;
 }
@@ -189,4 +191,25 @@ mod tests {
         assert_eq!(value["nested"]["priceImpactPercent"]["infinity"], 0);
         assert_eq!(value["array"][0]["project"], 5);
     }
+}
+
+/// Creates and returns a Protocol Buffer Timestamp object based on the current time.
+/// This function captures the current time and converts it to a Protocol Buffer
+pub fn timestamp() -> Option<Timestamp> {
+    SystemTime::now().duration_since(UNIX_EPOCH).ok().map(|duration| {
+        Timestamp {
+            seconds: duration.as_secs() as i64,
+            nanos: duration.subsec_nanos() as i32,
+        }
+    })
+}
+
+/// Returns the current time as an RFC 3339 formatted string suitable for
+/// Protocol Buffer Timestamp JSON serialization.
+pub fn timestamp_rfc3339() -> String {
+    let now: DateTime<Utc> = Utc::now();
+    format!("{}.{}Z", 
+        now.format("%Y-%m-%dT%H:%M:%S"),
+        format!("{:06}", now.timestamp_subsec_micros()).chars().take(3).collect::<String>() + "000"
+    )
 }

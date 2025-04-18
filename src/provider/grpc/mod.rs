@@ -6,19 +6,20 @@ use anyhow::Result;
 use rustls::crypto::ring::default_provider;
 use rustls::crypto::CryptoProvider;
 use solana_sdk::pubkey::Pubkey;
-use solana_trader_proto::api::{self, GetServerTimeRequest, PostSubmitBatchRequest, TransactionMessageV2};
+use solana_trader_proto::api::{self, GetServerTimeRequest, PostSubmitBatchRequest, PostSubmitPaladinRequest, TransactionMessageV2};
 use std::collections::HashMap;
 use tonic::service::Interceptor;
 use tonic::transport::ClientTlsConfig;
 use tonic::{
     metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel, Request,
 };
+use crate::provider::utils::timestamp;
 
 use crate::common::signing::{sign_transaction, SubmitParams};
 use crate::common::{get_base_url_from_env, grpc_endpoint, is_submit_only_endpoint, BaseConfig};
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api::{
-    GetRecentBlockHashRequestV2, PostSubmitRequest, TransactionMessage,
+    GetRecentBlockHashRequestV2, PostSubmitRequest, TransactionMessage, PostSubmitSnipeRequest
 };
 
 use super::utils::IntoTransactionMessage;
@@ -133,6 +134,8 @@ impl GrpcClient {
                 allow_back_run: submit_opts.allow_back_run,
                 revenue_address: submit_opts.revenue_address,
                 sniping: Some(false),
+                timestamp: timestamp(),
+                submit_protection: None
             };
 
             let signature = self
@@ -164,6 +167,8 @@ impl GrpcClient {
             use_bundle: Some(use_bundle),
             submit_strategy: submit_opts.submit_strategy.into(),
             front_running_protection: Some(submit_opts.front_running_protection),
+            timestamp: timestamp(),
+            submit_protection: None
         };
 
         let response = self
@@ -213,6 +218,7 @@ impl GrpcClient {
         let snipe_request = api::PostSubmitSnipeRequest {
             entries,
             use_staked_rp_cs: Some(use_staked_rpcs),
+            timestamp: timestamp()
         };
 
         let response = self
@@ -251,6 +257,7 @@ impl GrpcClient {
                 content: signed_tx.content,
             }),
             revert_protection: Some(revert_protection),
+            timestamp: timestamp()
         };
 
         let signature = self
@@ -311,6 +318,45 @@ impl GrpcClient {
             .post_submit(Request::new(request.clone()))
             .await
             .map_err(|e| anyhow::anyhow!("PostSubmit error: {}", e))?;
+
+        return Ok(response.into_inner())
+    }
+
+    pub async fn post_submit_snipe_v2(
+        &mut self,
+        request: &PostSubmitSnipeRequest,
+    ) -> Result<api::PostSubmitSnipeResponse> {
+        let response: tonic::Response<api::PostSubmitSnipeResponse> = self
+            .client
+            .post_submit_snipe_v2(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostSubmitSnipeV2 error: {}", e))?;
+
+        return Ok(response.into_inner())
+    }
+
+    pub async fn post_submit_paladin_v2(
+        &mut self,
+        request: &PostSubmitPaladinRequest,
+    ) -> Result<api::PostSubmitResponse> {
+        let response: tonic::Response<api::PostSubmitResponse> = self
+            .client
+            .post_submit_paladin_v2(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostSubmitPaladinV2 error: {}", e))?;
+
+        return Ok(response.into_inner())
+    }
+
+    pub async fn post_submit_v2(
+        &mut self,
+        request: &PostSubmitRequest,
+    ) -> Result<api::PostSubmitResponse> {
+        let response: tonic::Response<api::PostSubmitResponse> = self
+            .client
+            .post_submit_v2(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostSubmitV2 error: {}", e))?;
 
         return Ok(response.into_inner())
     }
