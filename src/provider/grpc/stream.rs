@@ -297,6 +297,21 @@ impl GrpcClient {
         Ok(response.into_inner())
     }
 
+    pub async fn get_pump_fun_amm_swap_stream(
+        &mut self,
+        pools: Vec<String>,
+    ) -> Result<Streaming<api::GetPumpFunAmmSwapStreamResponse>> {
+        let request = Request::new(api::GetPumpFunAmmSwapStreamRequest { pools });
+
+        let response = self
+            .client
+            .get_pump_fun_amm_swap_stream(request)
+            .await
+            .map_err(|e| anyhow::anyhow!("GetPumpFunAmmSwapStream error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
     pub async fn get_priority_fee_by_program_stream(
         &mut self,
         projects: Vec<String>,

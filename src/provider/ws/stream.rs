@@ -212,6 +212,17 @@ impl WebSocketClient {
             .stream_proto("GetPumpFunSwapsStream", &request)
             .await
     }
+
+    pub async fn get_pump_fun_amm_swap_stream(
+        &self,
+        pools: Vec<String>,
+    ) -> Result<impl Stream<Item = Result<api::GetPumpFunAmmSwapStreamResponse>>> {
+        let request = api::GetPumpFunAmmSwapStreamRequest { pools };
+
+        self.conn
+            .stream_proto("GetPumpFunAmmSwapStream", &request)
+            .await
+    }
     
 
     pub async fn get_quotes_stream(
