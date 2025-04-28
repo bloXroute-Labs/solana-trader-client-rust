@@ -423,3 +423,25 @@ async fn test_pump_fun_tokens_and_swaps_integration_ws() -> Result<()> {
     ws.close().await?;
     Ok(())
 }
+
+#[test_case(
+    vec![String::from("Gj5t6KjTw3gWW7SrMHEi1ojCkaYHyvLwb17gktf96HNH")];
+    "pump swap amm swaps"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_pump_fun_amm_swap_stream_grpc(pools: Vec<String>) -> Result<()> {
+    let ws = WebSocketClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
+    let mut stream = ws.get_pump_fun_amm_swap_stream(pools).await?;
+    
+    println!("starting pump fun amm swap stream");
+    
+    let response = stream
+        .next()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))??;
+    println!("Response received: {:#?}", response);
+
+    ws.close().await?;
+    Ok(())
+}

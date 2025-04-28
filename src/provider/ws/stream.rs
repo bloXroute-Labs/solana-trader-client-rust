@@ -220,7 +220,7 @@ impl WebSocketClient {
         let request = api::GetPumpFunAmmSwapStreamRequest { pools };
 
         self.conn
-            .stream_proto("GetPumpFunAmmSwapStream", &request)
+            .stream_proto("GetPumpFunAMMSwapStream", &request)
             .await
     }
     
