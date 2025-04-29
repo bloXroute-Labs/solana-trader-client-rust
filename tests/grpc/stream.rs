@@ -30,6 +30,32 @@ async fn test_pump_new_amm_pool(expected_pool: usize) -> Result<()> {
 }
 
 #[test_case(
+    vec![String::from("Gj5t6KjTw3gWW7SrMHEi1ojCkaYHyvLwb17gktf96HNH")],
+    1 ;
+    "pump swap amm swaps"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_pump_fun_amm_swap_stream_grpc(pools: Vec<String>, expected_pools: usize) -> Result<()> {
+    let mut client = GrpcClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
+    let mut stream = client.get_pump_fun_amm_swap_stream(pools).await?;
+    
+    println!("starting pump fun amm swap stream");
+    
+    for swap_num in 1..=expected_pools {
+        let response = stream
+            .next()
+            .await
+            .ok_or_else(|| anyhow::anyhow!("Stream ended without data"))?
+            .map_err(|e| anyhow::anyhow!("Stream error: {}", e))?;
+            
+        println!("New PumpSwap swap {} received: {:#?}", swap_num, response);
+    }
+    
+    Ok(())
+}
+
+#[test_case(
     vec![api::Project::PRaydium],
     vec![WRAPPED_SOL.to_string()] ;
     "raydium SOL price stream"
