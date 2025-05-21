@@ -681,23 +681,4 @@ impl HTTPClient {
 
         self.handle_response(response).await
     }
-
-    pub async fn get_leader_schedule(
-        &self,
-        max_slots: u64,
-    ) -> Result<api::GetLeaderScheduleResponse> {
-        let url = format!(
-            "{}/api/v2/system/leader-schedule?maxSlots={}",
-            self.base_url, max_slots
-        );
-
-        let response = self
-            .client
-            .get(&url)
-            .send()
-            .await
-            .map_err(|e| anyhow!("HTTP GET request failed: {}", e))?;
-
-        self.handle_response(response).await
-    }
 }
