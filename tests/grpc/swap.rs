@@ -9,6 +9,7 @@ use solana_trader_client_rust::{
 use solana_trader_proto::api;
 use solana_trader_proto::common::Fee;
 use test_case::test_case;
+use tokio_stream::StreamExt;
 
 #[test_case(
     WRAPPED_SOL,
@@ -468,35 +469,31 @@ async fn test_jupiter_swap_instructions_grpc(
 }
 
 #[test_case(
-    0.0001,
-    10.0;
-    "Pumpfun swap"
+    50.0
+    ;"Pumpfun swap"
 )]
 #[tokio::test]
 #[ignore]
-async fn test_pumpfun_swap_grpc(in_amount: f64, slippage: f64) -> Result<()> {
-    let bonding_curve_address = "Fh8fnZUVEpPStJ2hKFNNjMAyuyvoJLMouENawg4DYCBc";
-    let mint_address = "2DEsbYgW94AtZxgUfYXoL8DqJAorsLrEWZdSfriipump";
+async fn test_pumpfun_swap_grpc(slippage: f64) -> Result<()> {
     let mut client = GrpcClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
 
-    let request = api::GetPumpFunQuotesRequest {
-        quote_type: "buy".to_string(),
-        bonding_curve_address: bonding_curve_address.to_string(),
-        amount: in_amount,
-        mint_address: mint_address.to_string(),
-    };
-
-    let pump_quote_response = client.get_pump_fun_quotes(&request).await?;
+    let mut tokens_stream = client.get_pump_fun_new_tokens_stream().await?;
+    let new_token = tokens_stream
+        .next()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("Tokens stream ended without data"))?
+        .map_err(|e| anyhow::anyhow!("Tokens stream error: {}", e))?;
 
     let request = api::PostPumpFunSwapRequest {
         user_address: client
             .public_key
             .unwrap_or_else(|| panic!("Public key is required for pump fun swap"))
             .to_string(),
-        bonding_curve_address: bonding_curve_address.to_string(),
-        token_address: "2DEsbYgW94AtZxgUfYXoL8DqJAorsLrEWZdSfriipump".to_string(),
-        token_amount: pump_quote_response.out_amount,
-        sol_threshold: pump_quote_response.in_amount,
+        bonding_curve_address: new_token.bonding_curve.to_string(),
+        token_address: new_token.mint.to_string(),
+        creator: new_token.creator.to_string(),
+        token_amount: 1.0,
+        sol_threshold: 0.05,
         compute_limit: 300000,
         compute_price: 2000,
         tip: Some(2000001),
