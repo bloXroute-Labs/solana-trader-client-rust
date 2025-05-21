@@ -392,21 +392,6 @@ async fn test_get_account_balance_http(owner_address: &str) -> Result<()> {
     Ok(())
 }
 
-#[test_case(100; "max slots")]
-#[tokio::test]
-#[ignore]
-async fn test_get_leader_schedule_grpc(max_slots: u64) -> Result<()> {
-    let client = HTTPClient::new(None)?;
-
-    let response = client.get_leader_schedule(max_slots).await?;
-    println!(
-        "Get Leader Schedule Response: {}",
-        serde_json::to_string_pretty(&response)?
-    );
-
-    Ok(())
-}
-
 #[tokio::test]
 #[ignore]
 async fn test_submit_snipe_http() -> Result<()> {
