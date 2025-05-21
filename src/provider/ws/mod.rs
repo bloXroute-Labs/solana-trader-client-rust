@@ -302,18 +302,6 @@ impl WebSocketClient {
         self.conn.request("GetAccountBalance", params).await
     }
 
-    pub async fn get_leader_schedule(
-        &self,
-        max_slots: u64,
-    ) -> Result<api::GetLeaderScheduleResponse> {
-        let request = api::GetLeaderScheduleRequest { max_slots };
-
-        let params = serde_json::to_value(request)
-            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
-
-        self.conn.request("GetLeaderSchedule", params).await
-    }
-
     pub async fn get_server_time(
         &self
     ) -> Result<api::GetServerTimeResponse> {
