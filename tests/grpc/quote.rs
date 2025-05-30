@@ -156,6 +156,34 @@ async fn test_pump_fun_quotes_grpc(
 }
 
 #[test_case(
+    api::GetPumpFunAmmQuotesRequest {
+        in_token: WRAPPED_SOL.to_string(),
+        in_amount: 10.0,
+        out_token: USDC.to_string(),
+        pool: "Gf7sXMoP8iRw4iiXmJ1nq4vxcRycbGXy5RL8a8LnTd3v".to_string(),
+        slippage: 0.9,
+    };
+    "PumpFun AMM quote via GRPC"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_get_pump_fun_amm_quotes_grpc(request: api::GetPumpFunAmmQuotesRequest) -> Result<()> {
+    let mut client = GrpcClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
+
+    let response = client.get_pump_fun_amm_quotes(&request).await?;
+    println!(
+        "PumpFun AMM Quote: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+    assert!(
+        response.out_amount > 0.0,
+        "Expected non-zero out amount in response"
+    );
+
+    Ok(())
+}
+
+#[test_case(
     WRAPPED_SOL,
     USDC,
     0.01,

@@ -70,6 +70,16 @@ impl WebSocketClient {
         self.conn.request("GetPumpFunQuotes", params).await
     }
 
+    pub async fn get_pump_fun_amm_quotes(
+        &self,
+        request: &api::GetPumpFunAmmQuotesRequest,
+    ) -> Result<api::GetPumpFunAmmQuotesResponse> {
+        let params = serde_json::to_value(request)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
+
+        self.conn.request("GetPumpFunAmmQuotes", params).await
+    }
+
     // NOTE: Fast mode is not used as of 11/1, breaks the endpoint.
     pub async fn get_jupiter_quotes(
         &self,

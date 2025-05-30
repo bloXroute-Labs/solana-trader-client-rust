@@ -96,6 +96,19 @@ impl GrpcClient {
         Ok(response.into_inner())
     }
 
+    pub async fn get_pump_fun_amm_quotes(
+        &mut self,
+        request: &api::GetPumpFunAmmQuotesRequest,
+    ) -> Result<api::GetPumpFunAmmQuotesResponse> {
+        let response = self
+            .client
+            .get_pump_fun_amm_quotes(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("GetPumpFunAmmQuotes error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
     // NOTE: Fast mode is not used as of 11/1/24, breaks the endpoint.
     pub async fn get_jupiter_quotes(
         &mut self,

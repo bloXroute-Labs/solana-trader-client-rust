@@ -184,6 +184,38 @@ async fn test_pump_fun_quotes_ws(
 }
 
 #[test_case(
+    api::GetPumpFunAmmQuotesRequest {
+        in_token: WRAPPED_SOL.to_string(),
+        in_amount: 10.0,
+        out_token: USDC.to_string(),
+        pool: "Gf7sXMoP8iRw4iiXmJ1nq4vxcRycbGXy5RL8a8LnTd3v".to_string(),
+        slippage: 0.9,
+    };
+    "PumpFun AMM quote via WS"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_get_pump_fun_amm_quotes_ws(request: api::GetPumpFunAmmQuotesRequest) -> Result<()> {
+    let client = WebSocketClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
+
+    let response = timeout(
+        Duration::from_secs(10),
+        client.get_pump_fun_amm_quotes(&request),
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("Timeout: {}", e))??;
+
+    println!(
+        "PumpFun AMM Quote: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+    assert!(response.out_amount > 0.0, "Expected non-zero out amount");
+
+    client.close().await?;
+    Ok(())
+}
+
+#[test_case(
     WRAPPED_SOL,
     USDC,
     0.01,

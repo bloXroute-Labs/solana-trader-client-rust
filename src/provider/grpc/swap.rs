@@ -219,6 +219,19 @@ impl GrpcClient {
         return Ok(response.into_inner())
     }
 
+    pub async fn post_pump_fun_amm_swap(
+        &mut self,
+        request: &api::PostPumpFunAmmSwapRequest,
+    ) -> Result<api::PostPumpFunAmmSwapResponse> {
+        let response = self
+            .client
+            .post_pump_fun_amm_swap(Request::new(request.clone()))
+            .await
+            .map_err(|e| anyhow::anyhow!("PostPumpFunAmmSwap error: {}", e))?;
+
+        Ok(response.into_inner())
+    }
+
     pub async fn post_trade_swap(
         &mut self,
         request: &api::TradeSwapRequest,

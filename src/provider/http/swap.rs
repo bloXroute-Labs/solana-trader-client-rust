@@ -332,4 +332,17 @@ impl HTTPClient {
         Ok(result)
     }
 
+    pub async fn post_pump_fun_amm_swap(
+        &self,
+        request: &api::PostPumpFunAmmSwapRequest,
+    ) -> Result<api::PostPumpFunAmmSwapResponse> {
+        let response = self
+            .client
+            .post(format!("{}/api/v2/pumpfun/amm/swap", self.base_url))
+            .json(&request)
+            .send()
+            .await?;
+
+        self.handle_response(response).await
+    }
 }
