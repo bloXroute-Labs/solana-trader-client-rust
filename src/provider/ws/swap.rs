@@ -301,4 +301,14 @@ impl WebSocketClient {
         });
         self.conn.request("PostPumpFunSwapSol", params).await
     }
+
+    pub async fn post_pump_fun_amm_swap(
+        &self,
+        request: &api::PostPumpFunAmmSwapRequest,
+    ) -> Result<api::PostPumpFunAmmSwapResponse> {
+        let params = serde_json::to_value(request)
+            .map_err(|e| anyhow::anyhow!("Failed to serialize request: {}", e))?;
+
+        self.conn.request("PostPumpFunAmmSwap", params).await
+    }
 }

@@ -515,3 +515,52 @@ async fn test_pumpfun_swap_grpc(slippage: f64) -> Result<()> {
     println!("signature : {:#?}", s?);
     Ok(())
 }
+
+#[test_case(
+    api::PostPumpFunAmmSwapRequest {
+        owner_address: "will be set in test fn".to_string(),
+        in_token: WRAPPED_SOL.to_string(),
+        in_amount: 10.0,
+        out_token: USDC.to_string(),
+        pool: "Gf7sXMoP8iRw4iiXmJ1nq4vxcRycbGXy5RL8a8LnTd3v".to_string(),
+        slippage: 0.9,
+        compute_limit: 130000,
+        compute_price: 100000,
+        tip: Some(100000),
+    };
+    "PumpFun AMM swap via GRPC"
+)]
+#[tokio::test]
+#[ignore]
+async fn test_post_pump_fun_amm_swap_grpc(mut request: api::PostPumpFunAmmSwapRequest) -> Result<()> {
+    let mut client = GrpcClient::new(Some(MAINNET_PUMP_NY.to_string())).await?;
+
+    request.owner_address = client
+        .public_key
+        .unwrap_or_else(|| panic!("Public key is required for PumpFun AMM swap"))
+        .to_string();
+
+    let response = client.post_pump_fun_amm_swap(&request).await?;
+    println!(
+        "PumpFun AMM Swap: {}",
+        serde_json::to_string_pretty(&response)?
+    );
+    assert!(
+        response.buy_base_amount_out > 0.0,
+        "Expected non-zero buy_base_amount_out in response"
+    );
+    assert!(
+        response.buy_max_quote_amount_in > 0.0,
+        "Expected non-zero buy_max_quote_amount_in in response"
+    );
+    assert!(
+        response.sell_base_amount_in == 0.0,
+        "Expected zero sell_base_amount_in in response"
+    );
+    assert!(
+        response.sell_min_quote_amount_out == 0.0,
+        "Expected zero sell_min_quote_amount_out in response"
+    );
+
+    Ok(())
+}

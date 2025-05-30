@@ -49,15 +49,15 @@ impl HTTPClient {
     ) -> anyhow::Result<api::GetRaydiumClmmPoolsResponse> {
         let url = format!("{}/api/v2/raydium/clmm-pools?pairOrAddress={}", self.base_url, pair_or_address);
         println!("{}", url);
-        
+
         let response = self
             .client
             .get(&url)
             .send()
             .await?;
-            
+
         let result: api::GetRaydiumClmmPoolsResponse = self.handle_response(response).await?;
-        
+
         Ok(result)
     }
 
@@ -66,15 +66,15 @@ impl HTTPClient {
     ) -> anyhow::Result<api::GetRaydiumPoolsResponse> {
         let url = format!("{}/api/v2/raydium/pools", self.base_url);
         println!("{}", url);
-        
+
         let response = self
             .client
             .get(&url)
             .send()
             .await?;
-            
+
         let result: api::GetRaydiumPoolsResponse = self.handle_response(response).await?;
-        
+
         Ok(result)
     }
 
@@ -85,15 +85,15 @@ impl HTTPClient {
         let pairs_query = pairs_or_addresses.join(",");
         let url = format!("{}/api/v2/raydium/pool-reserves?pairsOrAddresses={}", self.base_url, pairs_query);
         println!("{}", url);
-        
+
         let response = self
             .client
             .get(&url)
             .send()
             .await?;
-            
+
         let result: api::GetRaydiumPoolReserveResponse = self.handle_response(response).await?;
-        
+
         Ok(result)
     }
 
@@ -135,6 +135,20 @@ impl HTTPClient {
             .send()
             .await
             .map_err(|e| anyhow::anyhow!("HTTP GET request failed: {}", e))?;
+
+        self.handle_response(response).await
+    }
+
+    pub async fn get_pump_fun_amm_quotes(
+        &self,
+        request: &api::GetPumpFunAmmQuotesRequest,
+    ) -> Result<api::GetPumpFunAmmQuotesResponse> {
+        let response = self
+            .client
+            .post(format!("{}/api/v2/pumpfun/amm/quotes", self.base_url))
+            .json(&request)
+            .send()
+            .await?;
 
         self.handle_response(response).await
     }
