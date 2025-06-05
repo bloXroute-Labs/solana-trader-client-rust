@@ -13,6 +13,7 @@ use tonic::transport::ClientTlsConfig;
 use tonic::{
     metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel, Request,
 };
+use crate::common::constants::WARNING_TLS_SLOWDOWN;
 use crate::provider::utils::timestamp;
 
 use crate::common::signing::{sign_transaction, SubmitParams};
@@ -76,6 +77,9 @@ impl GrpcClient {
         let (default_base_url, secure) = get_base_url_from_env();
         let final_base_url = endpoint.unwrap_or(default_base_url);
         let endpoint = grpc_endpoint(&final_base_url, secure);
+        if endpoint.ends_with("443") {
+            println!("{}", WARNING_TLS_SLOWDOWN);
+        }
 
         is_submit_only_endpoint(&final_base_url);
 

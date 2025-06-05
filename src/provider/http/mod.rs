@@ -8,6 +8,7 @@ use reqwest::{
 };
 use serde::de::DeserializeOwned;
 use serde_json::json;
+use crate::common::constants::WARNING_TLS_SLOWDOWN;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair};
 use solana_trader_proto::api::{self, PostSubmitPaladinRequest, GetRecentBlockHashResponseV2};
 use crate::provider::utils::timestamp_rfc3339;
@@ -40,6 +41,9 @@ impl HTTPClient {
         let (default_base_url, secure) = get_base_url_from_env();
         let final_base_url = endpoint.unwrap_or(default_base_url);
         let endpoint = http_endpoint(&final_base_url, secure);
+        if endpoint.starts_with("https://") {
+            println!("{}", WARNING_TLS_SLOWDOWN);
+        }
 
         is_submit_only_endpoint(&final_base_url);
 
