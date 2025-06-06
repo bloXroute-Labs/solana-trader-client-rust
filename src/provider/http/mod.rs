@@ -50,6 +50,9 @@ impl HTTPClient {
         let headers = Self::build_headers(&base.auth_header)?;
         let client = Client::builder()
             .default_headers(headers)
+            .pool_idle_timeout(None)
+            .pool_max_idle_per_host(200)
+            .tcp_keepalive(Some(std::time::Duration::from_secs(15)))
             .build()
             .map_err(|e| anyhow!("Failed to create HTTP client: {}", e))?;
 

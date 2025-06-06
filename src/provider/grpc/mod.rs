@@ -93,6 +93,9 @@ impl GrpcClient {
             .map_err(|e| anyhow::anyhow!("Invalid URI: {}", e))?
             .tls_config(ClientTlsConfig::new().with_webpki_roots())
             .map_err(|e| anyhow::anyhow!("TLS config error: {}", e))?
+            .keep_alive_while_idle(true)
+            .http2_keep_alive_interval(std::time::Duration::from_secs(15))
+            .keep_alive_timeout(std::time::Duration::from_secs(5))
             .connect()
             .await
             .map_err(|e| anyhow::anyhow!("Connection error: {}", e))?;

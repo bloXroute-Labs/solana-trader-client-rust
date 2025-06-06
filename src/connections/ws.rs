@@ -30,7 +30,7 @@ use crate::provider::utils::convert_string_enums;
 const CONNECTION_RETRY_TIMEOUT: Duration = Duration::from_secs(15);
 const CONNECTION_RETRY_INTERVAL: Duration = Duration::from_millis(100);
 const SUBSCRIPTION_BUFFER: usize = 1000;
-const PING_INTERVAL: Duration = Duration::from_secs(30);
+const PING_INTERVAL: Duration = Duration::from_secs(15);
 
 #[derive(Debug)]
 pub struct Subscription {
