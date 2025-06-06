@@ -91,7 +91,7 @@ impl BaseConfig {
         let keypair = if let Ok(private_key) = env::var("PRIVATE_KEY") {
             let mut output = [0; 64];
             match decode(private_key).onto(&mut output) {
-                Ok(_) => match Keypair::from_bytes(&output) {
+                Ok(_) => match Keypair::try_from(&output[..]) {
                     Ok(kp) => Some(kp),
                     Err(e) => {
                         println!("Warning: Failed to create keypair: {}", e);
