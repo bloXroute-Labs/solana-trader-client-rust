@@ -5,7 +5,6 @@ use solana_sdk::instruction::{AccountMeta, CompiledInstruction, Instruction};
 use solana_sdk::message::VersionedMessage;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Signature, Signer};
-use solana_sdk::system_instruction;
 use solana_sdk::transaction::{Transaction, VersionedTransaction};
 use solana_trader_client_rust::common::signing::SubmitParams;
 use solana_trader_client_rust::provider::grpc::GrpcClient;
@@ -32,9 +31,9 @@ async fn test_add_memo_to_tx() -> anyhow::Result<()> {
     let keypair = client.get_keypair()?;
     let jito_tip_wallet = Pubkey::from_str(JITO_TIP_WALLET)?;
 
-    let transfer_instruction = system_instruction::transfer(&pubkey, &pubkey, lamports_to_transfer);
+    let transfer_instruction = solana_system_interface::instruction::transfer(&pubkey, &pubkey, lamports_to_transfer);
     let jito_tip_instruction =
-        system_instruction::transfer(&pubkey, &jito_tip_wallet, lamports_to_transfer);
+        solana_system_interface::instruction::transfer(&pubkey, &jito_tip_wallet, lamports_to_transfer);
 
     let mut transaction = Transaction::new_signed_with_payer(
         &[
@@ -72,7 +71,7 @@ async fn test_add_memo_to_serialized_tx() -> anyhow::Result<()> {
     let pubkey = client.public_key.unwrap();
     let keypair = client.get_keypair();
 
-    let transfer_instruction = system_instruction::transfer(&pubkey, &pubkey, lamports_to_transfer);
+    let transfer_instruction = solana_system_interface::instruction::transfer(&pubkey, &pubkey, lamports_to_transfer);
 
     let mut transaction = Transaction::new_with_payer(&[transfer_instruction], Some(&pubkey));
 

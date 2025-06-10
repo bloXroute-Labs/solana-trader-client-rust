@@ -23,13 +23,14 @@ use tokio_tungstenite::{connect_async_tls_with_config, Connector};
 use tokio_tungstenite::{tungstenite::protocol::Message, WebSocketStream};
 use url::Url;
 
+use crate::common::constants::WARNING_TLS_SLOWDOWN;
 use crate::common::{get_base_url_from_env, ws_endpoint, BaseConfig};
 use crate::provider::utils::convert_string_enums;
 
 const CONNECTION_RETRY_TIMEOUT: Duration = Duration::from_secs(15);
 const CONNECTION_RETRY_INTERVAL: Duration = Duration::from_millis(100);
 const SUBSCRIPTION_BUFFER: usize = 1000;
-const PING_INTERVAL: Duration = Duration::from_secs(30);
+const PING_INTERVAL: Duration = Duration::from_secs(15);
 
 #[derive(Debug)]
 pub struct Subscription {
@@ -59,6 +60,9 @@ impl WS {
         let base = BaseConfig::try_from_env()?;
         let (base_url, secure) = get_base_url_from_env();
         let endpoint = endpoint.unwrap_or_else(|| ws_endpoint(&base_url, secure));
+        if endpoint.starts_with("wss://") {
+            println!("{}", WARNING_TLS_SLOWDOWN);
+        }
 
         if base.auth_header.is_empty() {
             return Err(anyhow::anyhow!("AUTH_HEADER is empty"));

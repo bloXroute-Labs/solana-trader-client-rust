@@ -4,13 +4,12 @@ pub const MAINNET_NY: &str = "ny.solana.dex.blxrbdn.com";
 pub const MAINNET_UK: &str = "uk.solana.dex.blxrbdn.com";
 pub const MAINNET_PUMP_NY: &str = "pump-ny.solana.dex.blxrbdn.com";
 pub const MAINNET_PUMP_UK: &str = "pump-uk.solana.dex.blxrbdn.com";
-
-// see https://docs.bloxroute.com/solana/trader-api/introduction/regions for all regions of traderAPI. There are
-// some regions below that are only available for transaction submission related endpoints, not full API service.
 pub const MAINNET_FRANKFURT: &str = "germany.solana.dex.blxrbdn.com";
 pub const MAINNET_LA: &str = "la.solana.dex.blxrbdn.com";
 pub const MAINNET_AMSTERDAM: &str = "amsterdam.solana.dex.blxrbdn.com";
 pub const MAINNET_TOKYO: &str = "tokyo.solana.dex.blxrbdn.com";
+
+pub const WARNING_TLS_SLOWDOWN: &str = "Performance Notice: Secure (TLS) endpoints may introduce latency due to handshake overhead. For optimal trading speed, consider using non-secure endpoints when appropriate.";
 
 // Common tokens
 pub const WRAPPED_SOL: &str = "So11111111111111111111111111111111111111112";

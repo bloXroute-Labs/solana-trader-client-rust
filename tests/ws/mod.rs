@@ -14,7 +14,6 @@ use test_case::test_case;
 use solana_hash::Hash;
 use solana_sdk::{
     pubkey::Pubkey,
-    system_instruction,
     transaction::Transaction,
     instruction::Instruction,
     compute_budget::ComputeBudgetInstruction,
@@ -53,8 +52,8 @@ fn create_transfer_instructions(from: &Pubkey, tip_amount: u64) -> anyhow::Resul
     let tip_wallet = Pubkey::from_str(BLOXROUTE_TIP_WALLET)?;
     
     Ok(vec![
-        system_instruction::transfer(from, &tip_wallet, tip_amount),
-        system_instruction::transfer(from, from, SEND_AMOUNT_LAMPORTS),
+        solana_system_interface::instruction::transfer(from, &tip_wallet, tip_amount),
+        solana_system_interface::instruction::transfer(from, from, SEND_AMOUNT_LAMPORTS),
     ])
 }
 
@@ -65,8 +64,8 @@ fn create_paladin_instructions(from: &Pubkey, tip_amount: u64) -> anyhow::Result
     Ok(vec![
         ComputeBudgetInstruction::set_compute_unit_limit(PALADIN_MIN_COMPUTE_BUDGET_UNITS),
         ComputeBudgetInstruction::set_compute_unit_price(PALADIN_MIN_PRIORITY_FEE_MICROLAMPORTS),
-        system_instruction::transfer(from, &tip_wallet, tip_amount),
-        system_instruction::transfer(from, from, SEND_AMOUNT_LAMPORTS),
+        solana_system_interface::instruction::transfer(from, &tip_wallet, tip_amount),
+        solana_system_interface::instruction::transfer(from, from, SEND_AMOUNT_LAMPORTS),
     ])
 }
 
@@ -462,8 +461,8 @@ async fn test_submit_snipe_ws() -> Result<()> {
     // First transaction: transfer to both jito and bloxroute
     let tx1 = create_signed_transaction(
         vec![
-            system_instruction::transfer(&pubkey, &jito_tip_wallet, small_tip),
-            system_instruction::transfer(&pubkey, &tip_wallet, small_tip),
+            solana_system_interface::instruction::transfer(&pubkey, &jito_tip_wallet, small_tip),
+            solana_system_interface::instruction::transfer(&pubkey, &tip_wallet, small_tip),
         ],
         &pubkey,
         keypair,
@@ -477,7 +476,7 @@ async fn test_submit_snipe_ws() -> Result<()> {
 
     // Second transaction: staked transfer to bloxroute
     let tx2 = create_signed_transaction(
-        vec![system_instruction::transfer(
+        vec![solana_system_interface::instruction::transfer(
             &pubkey,
             &tip_wallet,
             staked_tip_threshold,
@@ -535,7 +534,7 @@ async fn test_sign_and_submit_paladin() -> anyhow::Result<()> {
     // Create a transfer instruction (similar to the Go example)
     let transfer_amount = 10_000_000;
     let recipient = Pubkey::from_str("HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY")?;
-    let transfer_ix = system_instruction::transfer(&pubkey, &recipient, transfer_amount);
+    let transfer_ix = solana_system_interface::instruction::transfer(&pubkey, &recipient, transfer_amount);
     
     // Create a transaction with both instructions
     let transaction = Transaction::new_signed_with_payer(
