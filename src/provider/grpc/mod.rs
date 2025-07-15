@@ -116,17 +116,10 @@ impl GrpcClient {
         submit_opts: SubmitParams,
         use_bundle: bool,
     ) -> Result<Vec<String>> {
-        let block_hash = self
-            .client
-            .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
-            .await?
-            .into_inner()
-            .block_hash;
-
         let keypair = self.get_keypair()?;
 
         if txs.len() == 1 {
-            let signed_tx = sign_transaction(&txs[0], keypair, block_hash).await?;
+            let signed_tx = sign_transaction(&txs[0], keypair).await?;
 
             let req = PostSubmitRequest {
                 transaction: Some(TransactionMessage {
@@ -157,7 +150,7 @@ impl GrpcClient {
 
         let mut entries = Vec::with_capacity(txs.len());
         for tx in txs {
-            let signed_tx = sign_transaction(&tx, keypair, block_hash.clone()).await?;
+            let signed_tx = sign_transaction(&tx, keypair).await?;
 
             let entry = api::PostSubmitRequestEntry {
                 transaction: Some(TransactionMessage {
@@ -199,18 +192,11 @@ impl GrpcClient {
         txs: Vec<T>,
         use_staked_rpcs: bool,
     ) -> Result<Vec<String>> {
-        let block_hash = self
-            .client
-            .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
-            .await?
-            .into_inner()
-            .block_hash;
-
         let keypair = self.get_keypair()?;
 
         let mut entries = Vec::with_capacity(txs.len());
         for tx in txs {
-            let signed_tx = sign_transaction(&tx, keypair, block_hash.clone()).await?;
+            let signed_tx = sign_transaction(&tx, keypair).await?;
 
             let entry = api::PostSubmitRequestEntry {
                 transaction: Some(TransactionMessage {
@@ -249,15 +235,8 @@ impl GrpcClient {
         tx: T,
         revert_protection: bool,
     ) -> Result<String> {
-        let block_hash = self
-            .client
-            .get_recent_block_hash_v2(GetRecentBlockHashRequestV2 { offset: 0 })
-            .await?
-            .into_inner()
-            .block_hash;
-
         let keypair = self.get_keypair()?;
-        let signed_tx = sign_transaction(&tx, keypair, block_hash).await?;
+        let signed_tx = sign_transaction(&tx, keypair).await?;
 
         let paladin_request = api::PostSubmitPaladinRequest {
             transaction: Some(TransactionMessageV2 {

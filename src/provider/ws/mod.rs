@@ -6,7 +6,7 @@ use anyhow::{anyhow, Result};
 use serde_json::json;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
-use solana_trader_proto::api::{self, PostSubmitPaladinRequest, GetRecentBlockHashResponseV2};
+use solana_trader_proto::api::{self, PostSubmitPaladinRequest};
 
 use crate::common::signing::{sign_transaction, SubmitParams};
 use crate::common::{get_base_url_from_env, is_submit_only_endpoint, ws_endpoint, BaseConfig};
@@ -69,11 +69,8 @@ impl WebSocketClient {
     ) -> Result<Vec<String>> {
         let keypair = self.get_keypair()?;
 
-        let hash_res: GetRecentBlockHashResponseV2 =
-            self.conn.request("GetRecentBlockHashV2", json!({})).await?;
-
         if txs.len() == 1 {
-            let signed_tx = sign_transaction(&txs[0], keypair, hash_res.block_hash).await?;
+            let signed_tx = sign_transaction(&txs[0], keypair).await?;
 
             let request = json!({
                 "transaction": {
@@ -97,7 +94,7 @@ impl WebSocketClient {
 
         let mut entries = Vec::with_capacity(txs.len());
         for tx in txs {
-            let signed_tx = sign_transaction(&tx, keypair, hash_res.block_hash.clone()).await?;
+            let signed_tx = sign_transaction(&tx, keypair).await?;
             entries.push(json!({
                 "transaction": {
                     "content": signed_tx.content,
@@ -136,13 +133,10 @@ impl WebSocketClient {
     ) -> Result<Vec<String>> {
         let keypair = self.get_keypair()?;
 
-        let hash_res: GetRecentBlockHashResponseV2 =
-            self.conn.request("GetRecentBlockHashV2", json!({})).await?;
-
         // Build entries for each transaction
         let mut entries = Vec::with_capacity(txs.len());
         for tx in txs {
-            let signed_tx = sign_transaction(&tx, keypair, hash_res.block_hash.clone()).await?;
+            let signed_tx = sign_transaction(&tx, keypair).await?;
             entries.push(json!({
                 "transaction": {
                     "content": signed_tx.content,
@@ -176,11 +170,8 @@ impl WebSocketClient {
         tx: T,
         revert_protection: bool,
     ) -> Result<String> {
-        let hash_res: GetRecentBlockHashResponseV2 =
-            self.conn.request("GetRecentBlockHashV2", json!({})).await?;
-
         let keypair = self.get_keypair()?;
-        let signed_tx = sign_transaction(&tx, keypair, hash_res.block_hash).await?;
+        let signed_tx = sign_transaction(&tx, keypair).await?;
 
         let request = json!({
             "transaction": {

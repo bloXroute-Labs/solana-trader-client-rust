@@ -50,7 +50,6 @@ pub struct SignedTransaction {
 pub async fn sign_transaction<T>(
     tx: &T,
     keypair: &Keypair,
-    _blockhash: String, // no longer needed in this path
 ) -> Result<SignedTransaction>
 where
     T: IntoTransactionMessage + Clone,

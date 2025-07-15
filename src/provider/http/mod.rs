@@ -10,7 +10,7 @@ use serde::de::DeserializeOwned;
 use serde_json::json;
 use crate::common::constants::WARNING_TLS_SLOWDOWN;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair};
-use solana_trader_proto::api::{self, PostSubmitPaladinRequest, GetRecentBlockHashResponseV2};
+use solana_trader_proto::api::{self, PostSubmitPaladinRequest};
 use crate::provider::utils::timestamp_rfc3339;
 
 use crate::{
@@ -108,20 +108,8 @@ impl HTTPClient {
     ) -> Result<Vec<String>> {
         let keypair = self.get_keypair()?;
 
-        // TODO: refactor once this endpoint is defined
-        let response = self
-            .client
-            .get(format!(
-                "{}/api/v2/system/blockhash?offset={}",
-                self.base_url, 0
-            ))
-            .send()
-            .await?;
-
-        let res: GetRecentBlockHashResponseV2 = self.handle_response(response).await?;
-
         if txs.len() == 1 {
-            let signed_tx = sign_transaction(&txs[0], keypair, res.block_hash).await?;
+            let signed_tx = sign_transaction(&txs[0], keypair).await?;
 
             let request_json = json!({
                 "transaction": { "content": signed_tx.content, "isCleanup": signed_tx.is_cleanup },
@@ -148,7 +136,7 @@ impl HTTPClient {
 
         let mut entries = Vec::with_capacity(txs.len());
         for tx in txs {
-            let signed_tx = sign_transaction(&tx, keypair, res.block_hash.clone()).await?;
+            let signed_tx = sign_transaction(&tx, keypair).await?;
             entries.push(json!({
                 "transaction": {
                     "content": signed_tx.content,
@@ -279,22 +267,10 @@ impl HTTPClient {
     ) -> Result<Vec<String>> {
         let keypair = self.get_keypair()?;
 
-        // Get recent blockhash
-        let response = self
-            .client
-            .get(format!(
-                "{}/api/v2/system/blockhash?offset={}",
-                self.base_url, 0
-            ))
-            .send()
-            .await?;
-
-        let res: GetRecentBlockHashResponseV2 = self.handle_response(response).await?;
-
         // Build entries for each transaction
         let mut entries = Vec::with_capacity(txs.len());
         for tx in txs {
-            let signed_tx = sign_transaction(&tx, keypair, res.block_hash.clone()).await?;
+            let signed_tx = sign_transaction(&tx, keypair).await?;
             entries.push(json!({
                 "transaction": {
                     "content": signed_tx.content,
@@ -401,18 +377,8 @@ impl HTTPClient {
         tx: T,
         revert_protection: bool,
     ) -> Result<String> {
-        let response = self
-            .client
-            .get(format!(
-                "{}/api/v2/system/blockhash?offset={}",
-                self.base_url, 0
-            ))
-            .send()
-            .await?;
-
-        let res: GetRecentBlockHashResponseV2 = self.handle_response(response).await?;
         let keypair = self.get_keypair()?;
-        let signed_tx = sign_transaction(&tx, keypair, res.block_hash).await?;
+        let signed_tx = sign_transaction(&tx, keypair).await?;
 
         let request_json = json!({
             "transaction": {
