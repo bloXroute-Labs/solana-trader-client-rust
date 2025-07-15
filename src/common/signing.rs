@@ -84,7 +84,6 @@ fn sign_existing_transaction(base64_tx: &str, keypair: &Keypair) -> Result<Strin
 
     // Versioned transactions should be a super set of versioned and legacy transactions
     if let Ok(mut tx) = bincode::deserialize::<VersionedTransaction>(&tx_bytes) {
-        // sign versioned tx logic here
         let sig_index = tx.signatures.iter().position(|sig| *sig == Signature::default())
             .ok_or_else(|| anyhow!("No empty signature slot found"))?;
 
