@@ -1,11 +1,10 @@
 use anyhow::Result;
 use base64::{engine::general_purpose::STANDARD, Engine};
-use bincode::{deserialize, serialize};
 use serde::Serialize;
+use anyhow::{anyhow};
 use solana_hash::Hash;
 use solana_sdk::{
     instruction::Instruction,
-    message::VersionedMessage,
     pubkey::Pubkey,
     signature::{Keypair, Signature},
     signer::Signer,
@@ -51,55 +50,17 @@ pub struct SignedTransaction {
 pub async fn sign_transaction<T>(
     tx: &T,
     keypair: &Keypair,
-    blockhash: String,
 ) -> Result<SignedTransaction>
 where
     T: IntoTransactionMessage + Clone,
 {
     let tx_message = tx.clone().into_transaction_message();
-    let rawbytes = STANDARD.decode(&tx_message.content)?;
-    let parsed_hash = blockhash.parse()?;
 
-    let signed_data = match deserialize(&rawbytes) {
-        Ok(versioned_tx) => sign_versioned_transaction(versioned_tx, keypair, parsed_hash)?,
-        Err(_) => sign_legacy_transaction(&rawbytes, keypair, parsed_hash)?,
-    };
-
+    let signed_b64 = sign_existing_transaction(&tx_message.content, keypair)?;
     Ok(SignedTransaction {
-        content: STANDARD.encode(signed_data),
+        content: signed_b64,
         is_cleanup: tx_message.is_cleanup,
     })
-}
-
-fn sign_versioned_transaction(
-    mut tx: VersionedTransaction,
-    keypair: &Keypair,
-    blockhash: solana_sdk::hash::Hash,
-) -> Result<Vec<u8>> {
-    match &mut tx.message {
-        VersionedMessage::Legacy(message) => {
-            message.recent_blockhash = blockhash;
-        }
-        VersionedMessage::V0(message) => {
-            message.recent_blockhash = blockhash;
-        }
-    }
-
-    tx.signatures = vec![Signature::default()];
-    let message_data = tx.message.serialize();
-    tx.signatures[0] = keypair.sign_message(&message_data);
-
-    Ok(serialize(&tx)?)
-}
-
-fn sign_legacy_transaction(
-    rawbytes: &[u8],
-    keypair: &Keypair,
-    blockhash: solana_sdk::hash::Hash,
-) -> Result<Vec<u8>> {
-    let mut tx: Transaction = deserialize(rawbytes)?;
-    tx.try_partial_sign(&[keypair], blockhash)?;
-    Ok(serialize(&tx)?)
 }
 
 pub fn create_signed_transaction(
@@ -117,3 +78,27 @@ pub fn create_signed_transaction(
 
     Ok(transaction)
 }
+
+fn sign_existing_transaction(base64_tx: &str, keypair: &Keypair) -> Result<String> {
+    let tx_bytes = STANDARD.decode(base64_tx)?;
+
+    // Versioned transactions should be a super set of versioned and legacy transactions
+    if let Ok(mut tx) = bincode::deserialize::<VersionedTransaction>(&tx_bytes) {
+        let sig_index = tx.signatures.iter().position(|sig| *sig == Signature::default())
+            .ok_or_else(|| anyhow!("No empty signature slot found"))?;
+
+        let msg_bytes = tx.message.serialize();
+        tx.signatures[sig_index] = keypair.sign_message(&msg_bytes);
+
+        let signed_bytes = bincode::serialize(&tx)?;
+        return Ok(STANDARD.encode(signed_bytes));
+    }
+
+    // Fallback to legacy
+    let mut legacy_tx: Transaction = bincode::deserialize(&tx_bytes)?;
+    legacy_tx.try_partial_sign(&[keypair], legacy_tx.message.recent_blockhash)?;
+    let signed_bytes = bincode::serialize(&legacy_tx)?;
+    Ok(STANDARD.encode(signed_bytes))
+}
+
+
