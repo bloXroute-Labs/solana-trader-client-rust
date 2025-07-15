@@ -81,18 +81,25 @@ pub fn create_signed_transaction(
 
 fn sign_existing_transaction(base64_tx: &str, keypair: &Keypair) -> Result<String> {
     let tx_bytes = STANDARD.decode(base64_tx)?;
-    let mut tx: VersionedTransaction = bincode::deserialize(&tx_bytes)?;
 
-    // Find the index of the zero signature
-    let sig_index = tx.signatures.iter().position(|sig| sig == &Signature::default())
-        .ok_or_else(|| anyhow!("No empty signature slot found"))?;
+    // Versioned transactions should be a super set of versioned and legacy transactions
+    if let Ok(mut tx) = bincode::deserialize::<VersionedTransaction>(&tx_bytes) {
+        // sign versioned tx logic here
+        let sig_index = tx.signatures.iter().position(|sig| *sig == Signature::default())
+            .ok_or_else(|| anyhow!("No empty signature slot found"))?;
 
-    // Sign the message
-    let msg_bytes = bincode::serialize(&tx.message)?;
-    let signature = keypair.sign_message(&msg_bytes);
-    tx.signatures[sig_index] = signature;
+        let msg_bytes = tx.message.serialize();
+        tx.signatures[sig_index] = keypair.sign_message(&msg_bytes);
 
-    let signed_bytes = bincode::serialize(&tx)?;
+        let signed_bytes = bincode::serialize(&tx)?;
+        return Ok(STANDARD.encode(signed_bytes));
+    }
+
+    // Fallback to legacy
+    let mut legacy_tx: Transaction = bincode::deserialize(&tx_bytes)?;
+    legacy_tx.try_partial_sign(&[keypair], legacy_tx.message.recent_blockhash)?;
+    let signed_bytes = bincode::serialize(&legacy_tx)?;
     Ok(STANDARD.encode(signed_bytes))
 }
+
 
