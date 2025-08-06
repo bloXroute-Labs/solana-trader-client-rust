@@ -2,25 +2,28 @@ pub mod quote;
 pub mod stream;
 pub mod swap;
 
+use crate::common::constants::WARNING_TLS_SLOWDOWN;
+use crate::provider::utils::timestamp;
 use anyhow::Result;
 use rustls::crypto::ring::default_provider;
 use rustls::crypto::CryptoProvider;
 use solana_sdk::pubkey::Pubkey;
-use solana_trader_proto::api::{self, GetServerTimeRequest, PostSubmitBatchRequest, PostSubmitPaladinRequest, TransactionMessageV2};
+use solana_trader_proto::api::{
+    self, GetServerTimeRequest, PostSubmitBatchRequest, PostSubmitPaladinRequest,
+    TransactionMessageV2,
+};
 use std::collections::HashMap;
 use tonic::service::Interceptor;
 use tonic::transport::ClientTlsConfig;
 use tonic::{
     metadata::MetadataValue, service::interceptor::InterceptedService, transport::Channel, Request,
 };
-use crate::common::constants::WARNING_TLS_SLOWDOWN;
-use crate::provider::utils::timestamp;
 
 use crate::common::signing::{sign_transaction, SubmitParams};
 use crate::common::{get_base_url_from_env, grpc_endpoint, is_submit_only_endpoint, BaseConfig};
 use solana_sdk::signature::Keypair;
 use solana_trader_proto::api::{
-    GetRecentBlockHashRequestV2, PostSubmitRequest, TransactionMessage, PostSubmitSnipeRequest
+    GetRecentBlockHashRequestV2, PostSubmitRequest, PostSubmitSnipeRequest, TransactionMessage,
 };
 
 use super::utils::IntoTransactionMessage;
@@ -96,6 +99,8 @@ impl GrpcClient {
             .keep_alive_while_idle(true)
             .http2_keep_alive_interval(std::time::Duration::from_secs(15))
             .keep_alive_timeout(std::time::Duration::from_secs(5))
+            .initial_stream_window_size(1024 * 1024) // 1 MiB
+            .initial_connection_window_size(16 * 1024 * 1024) // 16 MiB
             .connect()
             .await
             .map_err(|e| anyhow::anyhow!("Connection error: {}", e))?;
@@ -135,7 +140,7 @@ impl GrpcClient {
                 revenue_address: submit_opts.revenue_address,
                 sniping: Some(false),
                 timestamp: timestamp(),
-                submit_protection: None
+                submit_protection: None,
             };
 
             let signature = self
@@ -168,7 +173,7 @@ impl GrpcClient {
             submit_strategy: submit_opts.submit_strategy.into(),
             front_running_protection: Some(submit_opts.front_running_protection),
             timestamp: timestamp(),
-            submit_protection: None
+            submit_protection: None,
         };
 
         let response = self
@@ -211,7 +216,7 @@ impl GrpcClient {
         let snipe_request = api::PostSubmitSnipeRequest {
             entries,
             use_staked_rp_cs: Some(use_staked_rpcs),
-            timestamp: timestamp()
+            timestamp: timestamp(),
         };
 
         let response = self
@@ -243,7 +248,7 @@ impl GrpcClient {
                 content: signed_tx.content,
             }),
             revert_protection: Some(revert_protection),
-            timestamp: timestamp()
+            timestamp: timestamp(),
         };
 
         let signature = self
@@ -292,7 +297,7 @@ impl GrpcClient {
             .await
             .map_err(|e| anyhow::anyhow!("GetServerTime error: {}", e))?;
 
-        return Ok(response.into_inner())
+        return Ok(response.into_inner());
     }
 
     pub async fn post_submit(
@@ -305,7 +310,7 @@ impl GrpcClient {
             .await
             .map_err(|e| anyhow::anyhow!("PostSubmit error: {}", e))?;
 
-        return Ok(response.into_inner())
+        return Ok(response.into_inner());
     }
 
     pub async fn post_submit_snipe_v2(
@@ -318,7 +323,7 @@ impl GrpcClient {
             .await
             .map_err(|e| anyhow::anyhow!("PostSubmitSnipeV2 error: {}", e))?;
 
-        return Ok(response.into_inner())
+        return Ok(response.into_inner());
     }
 
     pub async fn post_submit_paladin_v2(
@@ -331,7 +336,7 @@ impl GrpcClient {
             .await
             .map_err(|e| anyhow::anyhow!("PostSubmitPaladinV2 error: {}", e))?;
 
-        return Ok(response.into_inner())
+        return Ok(response.into_inner());
     }
 
     pub async fn post_submit_v2(
@@ -344,7 +349,7 @@ impl GrpcClient {
             .await
             .map_err(|e| anyhow::anyhow!("PostSubmitV2 error: {}", e))?;
 
-        return Ok(response.into_inner())
+        return Ok(response.into_inner());
     }
 
     pub async fn post_submit_batch(
@@ -357,7 +362,7 @@ impl GrpcClient {
             .await
             .map_err(|e| anyhow::anyhow!("PostSubmitBatch error: {}", e))?;
 
-        return Ok(response.into_inner())
+        return Ok(response.into_inner());
     }
 
     pub async fn get_recent_block_hash_v2(
