@@ -87,36 +87,6 @@ pub fn convert_jupiter_instructions(
     Ok(solana_instructions)
 }
 
-pub fn convert_raydium_instructions(
-    instructions: &[api::InstructionRaydium],
-) -> Result<Vec<Instruction>> {
-    let mut solana_instructions = Vec::new();
-
-    for inst in instructions {
-        let program_id = Pubkey::from_str(&inst.program_id)?;
-
-        let accounts: Vec<AccountMeta> = inst
-            .accounts
-            .iter()
-            .map(|acc| {
-                let pubkey = Pubkey::from_str(&acc.program_id)?;
-                Ok(AccountMeta {
-                    pubkey,
-                    is_signer: acc.is_signer,
-                    is_writable: acc.is_writable,
-                })
-            })
-            .collect::<Result<Vec<_>>>()?;
-
-        solana_instructions.push(Instruction {
-            program_id,
-            accounts,
-            data: inst.data.clone(),
-        });
-    }
-
-    Ok(solana_instructions)
-}
 
 pub fn create_transaction_message(
     instructions: Vec<Instruction>,

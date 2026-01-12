@@ -10,7 +10,6 @@ use serde::de::DeserializeOwned;
 use serde_json::json;
 use crate::common::constants::WARNING_TLS_SLOWDOWN;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair};
-use solana_trader_proto::api::{self, PostSubmitPaladinRequest};
 use crate::provider::utils::timestamp_rfc3339;
 
 use crate::{
@@ -235,31 +234,6 @@ impl HTTPClient {
         Ok(result)
     }
 
-    pub async fn post_submit_paladin_v2(
-        &self,
-        request: &PostSubmitPaladinRequest
-    ) -> anyhow::Result<api::PostSubmitResponse> {
-        let url = format!("{}/api/v2/submit-paladin", self.base_url);
-        println!("{}", url);
-        
-        let request_json = json!({
-            "transaction": request.transaction,
-            "revertProtection": request.revert_protection,
-            "timestamp": timestamp_rfc3339()
-        });
-        
-        let response = self
-            .client
-            .post(&url)
-            .json(&request_json)
-            .send()
-            .await?;
-            
-        let result: api::PostSubmitResponse = self.handle_response(response).await?;
-        
-        Ok(result)
-    }
-
     pub async fn sign_and_submit_snipe<T: IntoTransactionMessage + Clone>(
         &self,
         txs: Vec<T>,
@@ -370,38 +344,6 @@ impl HTTPClient {
         let result: api::PostSubmitResponse = self.handle_response(response).await?;
         
         Ok(result)
-    }
-
-    pub async fn sign_and_submit_paladin<T: IntoTransactionMessage + Clone>(
-        &self,
-        tx: T,
-        revert_protection: bool,
-    ) -> Result<String> {
-        let keypair = self.get_keypair()?;
-        let signed_tx = sign_transaction(&tx, keypair).await?;
-
-        let request_json = json!({
-            "transaction": {
-                "content": signed_tx.content
-            },
-            "revertProtection": revert_protection
-        });
-
-        let response = self
-            .client
-            .post(format!("{}/api/v2/submit-paladin", self.base_url))
-            .json(&request_json)
-            .send()
-            .await?;
-
-        let result: serde_json::Value = self.handle_response(response).await?;
-        let signature = result
-            .get("signature")
-            .and_then(|s| s.as_str())
-            .map(String::from)
-            .ok_or_else(|| anyhow!("Missing signature in response"))?;
-
-        Ok(signature)
     }
 
     pub async fn get_transaction(

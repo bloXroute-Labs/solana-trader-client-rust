@@ -6,7 +6,7 @@ use anyhow::Result;
 use rustls::crypto::ring::default_provider;
 use rustls::crypto::CryptoProvider;
 use solana_sdk::pubkey::Pubkey;
-use solana_trader_proto::api::{self, GetServerTimeRequest, PostSubmitBatchRequest, PostSubmitPaladinRequest, TransactionMessageV2};
+use solana_trader_proto::api::{self, GetServerTimeRequest, PostSubmitBatchRequest, TransactionMessageV2};
 use std::collections::HashMap;
 use tonic::service::Interceptor;
 use tonic::transport::ClientTlsConfig;
@@ -230,31 +230,6 @@ impl GrpcClient {
         Ok(signatures)
     }
 
-    pub async fn sign_and_submit_paladin<T: IntoTransactionMessage + Clone>(
-        &mut self,
-        tx: T,
-        revert_protection: bool,
-    ) -> Result<String> {
-        let keypair = self.get_keypair()?;
-        let signed_tx = sign_transaction(&tx, keypair).await?;
-
-        let paladin_request = api::PostSubmitPaladinRequest {
-            transaction: Some(TransactionMessageV2 {
-                content: signed_tx.content,
-            }),
-            revert_protection: Some(revert_protection),
-            timestamp: timestamp()
-        };
-
-        let signature = self
-            .client
-            .post_submit_paladin_v2(paladin_request)
-            .await?
-            .into_inner()
-            .signature;
-
-        Ok(signature)
-    }
 
     pub async fn get_transaction(
         &mut self,
@@ -317,19 +292,6 @@ impl GrpcClient {
             .post_submit_snipe_v2(Request::new(request.clone()))
             .await
             .map_err(|e| anyhow::anyhow!("PostSubmitSnipeV2 error: {}", e))?;
-
-        return Ok(response.into_inner())
-    }
-
-    pub async fn post_submit_paladin_v2(
-        &mut self,
-        request: &PostSubmitPaladinRequest,
-    ) -> Result<api::PostSubmitResponse> {
-        let response: tonic::Response<api::PostSubmitResponse> = self
-            .client
-            .post_submit_paladin_v2(Request::new(request.clone()))
-            .await
-            .map_err(|e| anyhow::anyhow!("PostSubmitPaladinV2 error: {}", e))?;
 
         return Ok(response.into_inner())
     }

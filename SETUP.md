@@ -63,13 +63,13 @@ Since these tests are networked, they have the ignore flag on by default:
 So each test must be called individually:
 
 ```bash
-cargo test test_raydium_quotes_grpc -- --ignored 
+cargo test test_get_rate_limit_grpc -- --ignored 
 ```
 
 If you want to see output from a given test, add the `nocapture` flag:
 
 ```bash
-cargo test test_raydium_quotes_grpc -- --ignored --nocapture
+cargo test test_get_rate_limit_grpc -- --ignored --nocapture
 ```
 
 run `cargo clippy --tests` after adding your tests, to resolve any potential issues 
