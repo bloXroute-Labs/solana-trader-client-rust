@@ -6,7 +6,6 @@ use anyhow::{anyhow, Result};
 use serde_json::json;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::Keypair;
-use solana_trader_proto::api::{self, PostSubmitPaladinRequest};
 
 use crate::common::signing::{sign_transaction, SubmitParams};
 use crate::common::{get_base_url_from_env, is_submit_only_endpoint, ws_endpoint, BaseConfig};
@@ -165,32 +164,6 @@ impl WebSocketClient {
         Ok(signatures)
     }
 
-    pub async fn sign_and_submit_paladin<T: IntoTransactionMessage + Clone>(
-        &self,
-        tx: T,
-        revert_protection: bool,
-    ) -> Result<String> {
-        let keypair = self.get_keypair()?;
-        let signed_tx = sign_transaction(&tx, keypair).await?;
-
-        let request = json!({
-            "transaction": {
-                "content": signed_tx.content,
-            },
-            "revertProtection": revert_protection,
-            "timestamp": timestamp_rfc3339()
-        });
-
-        let response: serde_json::Value = self.conn.request("PostSubmitPaladinV2", request).await?;
-
-        let signature = response
-            .get("signature")
-            .and_then(|s| s.as_str())
-            .map(String::from)
-            .ok_or_else(|| anyhow!("Missing signature in response"))?;
-
-        Ok(signature)
-    }
 
     pub async fn get_transaction(
         &self,
@@ -318,18 +291,6 @@ impl WebSocketClient {
         self.conn.request("PostSubmit", params).await
     }
 
-    pub async fn post_submit_paladin_v2(
-        &mut self,
-        request: &PostSubmitPaladinRequest,
-    ) -> Result<api::PostSubmitResponse> {
-
-        let params = json!({
-            "transaction": request.transaction,
-            "revertProtection": request.revert_protection,
-            "timestamp": timestamp_rfc3339()
-        });
-        self.conn.request("PostSubmitPaladinV2", params).await
-    }
 
     pub async fn post_submit_v2(
         &self,

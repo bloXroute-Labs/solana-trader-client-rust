@@ -17,7 +17,7 @@ use solana_sdk::{
     instruction::Instruction,
     compute_budget::ComputeBudgetInstruction,
 };
-use solana_trader_proto::api::{self, PostSubmitPaladinRequest, GetRecentBlockHashRequestV2, TransactionMessage, TransactionMessageV2};
+use solana_trader_proto::api::{self, GetRecentBlockHashRequestV2, TransactionMessage, TransactionMessageV2};
 use solana_trader_client_rust::{
     common::{
         constants::{SAMPLE_OWNER_ADDR, SAMPLE_TX_SIGNATURE},
@@ -28,10 +28,7 @@ use solana_trader_client_rust::{
 
 // Constants for tests
 const BLXROUTE_MIN_TIP: u64 = 1_000_000;
-const PALADIN_MIN_TIP: u64 = 10_000_001;
 const BLOXROUTE_TIP_WALLET: &str = "HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY";
-const PALADIN_MIN_PRIORITY_FEE_MICROLAMPORTS: u64 = 40_000_001;
-const PALADIN_MIN_COMPUTE_BUDGET_UNITS: u32 = 1_000_000;
 const SEND_AMOUNT_LAMPORTS: u64 = 1;
 
 // Helper function to create standard transfer instructions
@@ -39,18 +36,6 @@ fn create_transfer_instructions(from: &Pubkey, tip_amount: u64) -> anyhow::Resul
     let tip_wallet = Pubkey::from_str(BLOXROUTE_TIP_WALLET)?;
     
     Ok(vec![
-        solana_system_interface::instruction::transfer(from, &tip_wallet, tip_amount),
-        solana_system_interface::instruction::transfer(from, from, SEND_AMOUNT_LAMPORTS),
-    ])
-}
-
-// Helper function to create paladin instructions with compute budget
-fn create_paladin_instructions(from: &Pubkey, tip_amount: u64) -> anyhow::Result<Vec<Instruction>> {
-    let tip_wallet = Pubkey::from_str(BLOXROUTE_TIP_WALLET)?;
-    
-    Ok(vec![
-        ComputeBudgetInstruction::set_compute_unit_limit(PALADIN_MIN_COMPUTE_BUDGET_UNITS),
-        ComputeBudgetInstruction::set_compute_unit_price(PALADIN_MIN_PRIORITY_FEE_MICROLAMPORTS),
         solana_system_interface::instruction::transfer(from, &tip_wallet, tip_amount),
         solana_system_interface::instruction::transfer(from, from, SEND_AMOUNT_LAMPORTS),
     ])
@@ -64,24 +49,6 @@ fn prepare_transaction_message(tx: Transaction) -> anyhow::Result<TransactionMes
         content: general_purpose::STANDARD.encode(serialized_tx),
         is_cleanup: false,
     })
-}
-
-// Helper function to prepare paladin transaction message
-fn prepare_paladin_transaction_message(tx: Transaction) -> anyhow::Result<TransactionMessageV2> {
-    let serialized_tx = bincode::serialize(&tx)?;
-    
-    Ok(TransactionMessageV2 {
-        content: general_purpose::STANDARD.encode(serialized_tx),
-    })
-}
-
-// Helper function to create paladin submit request
-fn create_paladin_submit_request(transaction_message: TransactionMessageV2) -> PostSubmitPaladinRequest {
-    PostSubmitPaladinRequest {
-        transaction: Some(transaction_message),
-        revert_protection: Some(false),
-        timestamp: timestamp()
-    }
 }
 
 #[tokio::test]
@@ -180,52 +147,6 @@ async fn test_post_submit_v2() -> anyhow::Result<()> {
     
     // Log response for debugging
     println!("HTTP PostSubmitV2 Response: {}", serde_json::to_string_pretty(&response)?);
-    
-    Ok(())
-}
-
-// ************** READ *****************
-// Running this test will cost ~0.05 SOL
-// ************** READ *****************
-#[tokio::test]
-#[ignore]
-async fn test_post_submit_paladin_v2() -> anyhow::Result<()> {
-    // Initialize client
-    let client = HTTPClient::new(None)?;
-
-    // Get recent block hash
-    let block_hash = client
-        .get_recent_block_hash()
-        .await?
-        .block_hash
-        .parse::<Hash>()?;
-    
-    // Get client's public key and keypair
-    let pubkey = client.public_key.ok_or_else(|| anyhow::anyhow!("Missing public key"))?;
-    let keypair = client.get_keypair()?;
-    
-    // Create transaction instructions with compute budget settings
-    let instructions = create_paladin_instructions(&pubkey, PALADIN_MIN_TIP)?;
-    
-    // Create and sign transaction
-    let tx = create_signed_transaction(
-        instructions,
-        &pubkey,
-        keypair,
-        block_hash,
-    )?;
-    
-    // Prepare paladin transaction message
-    let transaction_message = prepare_paladin_transaction_message(tx)?;
-    
-    // Create paladin submit request
-    let request = create_paladin_submit_request(transaction_message);
-    
-    // Submit transaction and handle response
-    let response = client.post_submit_paladin_v2(&request).await?;
-    
-    // Log response for debugging
-    println!("HTTP PostSubmitPaladinV2 Response: {}", serde_json::to_string_pretty(&response)?);
     
     Ok(())
 }
@@ -453,58 +374,3 @@ async fn test_submit_snipe_http() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-#[ignore]
-async fn test_sign_and_submit_paladin_http() -> anyhow::Result<()> {
-    // Create a new HTTP client
-    let client = HTTPClient::new(None)?;
-    
-    // Get a recent block hash
-    let block_hash = client
-        .get_recent_block_hash_v2(&GetRecentBlockHashRequestV2 { offset: 0 })
-        .await?
-        .block_hash
-        .parse::<Hash>()?;
-
-    // Get public key and keypair
-    let pubkey = client.public_key.unwrap();
-    let keypair = client.get_keypair()?;
-    
-    // Create compute budget instruction to set compute unit price
-    let compute_unit_price = 200_000_000;
-    let compute_budget_ix = solana_sdk::compute_budget::ComputeBudgetInstruction::set_compute_unit_price(
-        compute_unit_price,
-    );
-    
-    // Create a transfer instruction
-    let transfer_amount = 10_000_000;
-    let recipient = Pubkey::from_str("HWEoBxYs7ssKuudEjzjmpfJVX7Dvi7wescFsVx2L5yoY")?;
-    let transfer_ix = solana_system_interface::instruction::transfer(&pubkey, &recipient, transfer_amount);
-    
-    // Create a transaction with both instructions
-    let transaction = solana_sdk::transaction::Transaction::new_signed_with_payer(
-        &[compute_budget_ix, transfer_ix],
-        Some(&pubkey),
-        &[&keypair],
-        block_hash,
-    );
-
-    // Serialize the transaction 
-    let serialized_tx = bincode::serialize(&transaction)?;
-    let encoded_tx = general_purpose::STANDARD.encode(serialized_tx);
-    
-    // Create a transaction message using TransactionMessageV2
-    let transaction_message = api::TransactionMessageV2 {
-        content: encoded_tx,
-    };
-    
-    // Call sign_and_submit_paladin with the transaction message
-    let signature = client.sign_and_submit_paladin(transaction_message, true).await?;
-    
-    println!("Paladin HTTP Transaction Signature: {}", signature);
-    
-    // Add assertion to verify the signature is not empty
-    assert!(!signature.is_empty(), "Expected a valid transaction signature");
-    
-    Ok(())
-}
